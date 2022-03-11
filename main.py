@@ -1,14 +1,19 @@
+from dotenv import load_dotenv
 import nextcord
+import os
 import utils
 import json
 import pymongo
 import objects.nation as nation
 
-mongoClient = pymongo.MongoClient("mongodb+srv://Chonga:chaneychonga@chongabot.fukpc.mongodb.net/ChongaBot?retryWrites=true&w=majority")
+load_dotenv()
+CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
+TOKEN = os.environ.get('DISCORDTOKEN')
+
+mongoClient = pymongo.MongoClient(CONNECTIONPASSWORD)
 db = mongoClient.ChongaBot
 
 client = nextcord.Client()
-TOKEN = 'OTUxMzkxNDIwMzE1NDY3Nzc2.YimyTg.Ya3orsZQmb3CQyyihy79BQlXYAw'
 
 @client.event
 async def on_ready():
@@ -29,11 +34,12 @@ async def on_message(message):
 
             Must check if user already has nation or if nation name is taken
         """
+        author = str(message.author)
         name = msgContent[1]
         ability = msgContent[2]
-        print(db.Nation.find({}, {'name': name}).limit(1).explain())
-        userNation = nation.createNation(name, ability)
-        # db.Nations.insert_one(userNation.__dict__)
+        userNation = nation.createNation(author, name, ability)
+        if not utils.checkCreation(message.author, name):
+            db.Nations.insert_one(userNation.__dict__)
     if message.content.startswith('/resources'):
         """Display your nations total resources """
         pass
