@@ -1,6 +1,7 @@
 
 """
 ALL FUCTIOONS NOT RELATED TO DISCORD WILL BE IN HERE
+    * Queries to database should be functions
 """
 import json
 import pymongo
@@ -23,6 +24,9 @@ def checkDuplicateCreation(user, name):
 
 def getAuthorResources(author):
     return json.dumps(list(db.Nations.find({"author": author}, {"_id": 0})))
+
+def getNationList(guild):
+    return json.dumps(list(db.Nations.find({"guild": guild}, {"_id": 0})))
 
 
      

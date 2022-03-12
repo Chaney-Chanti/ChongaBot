@@ -4,7 +4,6 @@ import os
 import utils
 import json
 import pymongo
-import pprint
 import objects.nation as nation
 
 load_dotenv()
@@ -42,7 +41,7 @@ async def on_message(message):
         userNation = nation.createNation(author, name, ability)
         if not utils.checkDuplicateCreation(message.author, name):
             db.Nations.insert_one(userNation.__dict__)
-    if message.content.startswith('/resources'):
+    elif message.content.startswith('/resources'):
         """Display your nations total resources """
         resources = utils.getAuthorResources(message.author.id)
         resources = json.loads(resources)
@@ -56,22 +55,28 @@ async def on_message(message):
             'Knowledge: ' + str(resources[0]['knowledge']) + '\n'        
         )
 
-    if message.content.startswith('/nations'):
+    elif message.content.startswith('/nations'):
         """Display a list of all nations on a server """
+        nations = utils.getNationList(message.guild.id)
+        nations = json.loads(nations)
+        cache = {}
+        for nation in nations:
+           cache[nation['name']] = str(nation['population'])
+        await message.channel.send(cache)
+    elif message.content.startswith('/army'):
+        """
+        Display a list of a users nation 
+        Do I need to make a self.unit for every unit in my class?
+        Make an army subclass with each unit?
+        """
+    elif message.content.startswith('/buy'):
+        """"Buys the unit for the author and then adds it to mongodb"""
         pass
-    if message.content.startswith('/nations'):
-        """Display a list of all nations on a server """
-        
-    if message.content.startswith('/buy'):
+    elif message.content.startswith('/attack'):
+        """Attack another player and go through the attack procedure"""
         pass
-    if message.content.startswith('/attack'):
-        pass
-    if message.content.startswith('/help'):
+    elif message.content.startswith('/help'):
         """Provide a list of commands"""
         pass
-    else:
-        await message.channel.send('Command not recognized')
-
-
-
+    
 client.run(TOKEN)
