@@ -13,12 +13,19 @@ mongoClient = pymongo.MongoClient(CONNECTIONPASSWORD)
 db = mongoClient.ChongaBot
 
 
-def checkCreation(user, name):
+def checkDuplicateCreation(user, name):
     """
     Checks the MongoDB Database for duplicate creations
     Returns True or False
     
     """
     print('hello', user, name)
+
+def getAuthorResources(author):
+    return json.dumps(list(db.Nations.find({"author": author}, {"_id": 0})))
+
+
+     
+
     
     
