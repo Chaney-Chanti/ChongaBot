@@ -1,42 +1,48 @@
 class createNation:
-    def __init__(self, author, guild, name, ability):
-        self.author = author
-        self.guild = guild
+    def __init__(self, userID, serverID, username, name, ability):
+        self.userID = userID
+        self.serverOriginID = serverID
+        self.username = username
+
         self.name = name
         self.ability = ability
-        self.population = 1
-        self.food = 100
-        self.timber = 100
-        self.metal = 100
-        self.wealth = 100
-        self.oil = 100
-        self.knowledge = 100
-        self.numCitizens = 1
 
-        class buildUniversity:
-            def __init__(self):
-                self.level = 1
-                self.built = False
-        class buildWaterMill:
-            def __init__(self):
-                self.level = 1
-                self.built = False
-        class buildQuarry:
-            def __init__(self):
-                self.level = 1
-                self.built = False
-        class buildOilRig:
-            def __init__(self):
-                self.level = 1
-                self.built = False
-        class buildMarket:
-            def __init__(self):
-                self.level = 1
-                self.built = False
-        class hasShield:
-            def __init__(self):
-                self.shield = False
-                self.timer = 0
+        self.numCitizens = 1
+        self.population = 1
+
+        self.granary = { 
+            'level': 1,
+            'built': False
+        }
+        self.waterMill = {
+            'level': 1,
+            'built': False
+        }   
+        self.quarry = {
+            'level': 1,
+            'built': False
+        }   
+        self.oilRig = {
+            'level': 1,
+            'built': False
+        }   
+        self.market = {
+            'level': 1,
+            'built': False
+        }   
+        self.university = {
+            'level': 1,
+            'built': False
+        } 
+        self.shield = {
+            'on': False,
+            'timer': 0
+        }
+    
+
+
+ 
+        
 
                 
             
