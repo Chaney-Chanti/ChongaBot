@@ -1,14 +1,11 @@
 from dotenv import load_dotenv
-from time import time, sleep
 import nextcord
 import os
-from numpy import number
 import utils
 import json
 import pymongo
 import objects.nation
 import subprocess
-
 
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
@@ -25,9 +22,11 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    print(message.content)
     if message.author == client.user:
         return
     msgContent = message.content.split(' ')
+    print(msgContent)
     userID = message.author.id
     serverID = message.guild.id
     username = str(message.author)
@@ -45,7 +44,7 @@ async def on_message(message):
             await message.channel.send('You either already have a nation, or profanity was found in the creation...')
     if message.content.startswith('/stats'):
         if len(msgContent) == 2:
-            user = msgContent[1]
+            user = msgContent[1] #Doesn't work I need to figure out @players
         elif len(msgContent) == 1:
             user = message.author.id
         else:
@@ -74,7 +73,6 @@ async def on_message(message):
             'Market Level: ' + str(resources[0]['market']['level']) + '\n'
             'University Level: ' + str(resources[0]['university']['level']) + '\n'
             'Market Level: ' + str(resources[0]['market']['level']) + '\n'
-            '======Units====== \n'
         )
     if message.content.startswith('/rankings'):
         nations = utils.getRankings()
@@ -97,12 +95,17 @@ async def on_message(message):
 
         #I want pop culture references
         medievalList = ['Citizen', 'Lancer', 'Archer', 'Wizards', 'Dragons']
-        enlightmentList = ['Lightning Benders', 'Lava Benders', '']
-        modernList = ['Citizen', 'Infantry', 'Tank', 'Fighter', 'Bomber']
-        spaceList = ['Citizen', 'Shock Troopers', 'Starfighter', 'Battlecruiser', 'Jedi', 'Death Star']
+        enlightmentList = ['Citizen', 'Minutemen', 'Cannon']
+        modernList = ['Citizen', 'Infantry', 'Tank', 'Fighter', 'Bomber', 'ICBM']
+        spaceList = ['Citizen', 'Shock Troopers', 'Starfighter', 'Battlecruiser', 'Death Star']
+
+        twitchList = ['Citizen', 'Pogchamps', 'MonkaS', 'KekW', 'KKhona']
+        animeList = ['Citizen', 'Collossal Titan', 'Avatar', 'Pokemon', 'Harem']
+        modernList = ['Citizen', 'Infantry', 'Tank', 'Fighter', 'Bomber', 'ICBM']
+        spaceList = ['Citizen', 'Shock Troopers', 'Starfighter', 'Battlecruiser', 'Death Star']
 
         age = utils.getAge(userID)
-        resourceCost = utils.getCost(userID, number)
+        resourceCost = utils.validateBuy(userID, number)
 
         if age == 'Medieval':
             unitList = medievalList
@@ -120,8 +123,13 @@ async def on_message(message):
     elif message.content.startswith('/attack'):
         if len(msgContent) != 3:
             await message.channel.send('Incorrect parameters. Format: /attack [player]')
-        if utils.playerHasShield():
-            pass
+        elif utils.playerHasShield():
+            await message.channel.send('You cannot attack this player, they have a shield.')
+        elif utils.playerExists():
+            await message.channel.send('This player does not exist')
+        else: #Battle Sequence
+            utils.attackSequence(message.player.id, message.player.id2)
+        
     elif message.content.startswith('/Chongahelp'): #Don't know how to make commands not conflict with other bots
         await message.channel.send(
             '========RULES========\n'
@@ -131,9 +139,8 @@ async def on_message(message):
             'You only get one nation for all servers.\n' 
             '========Commands========\n' 
             '/createNation [name] [ability] - Create a nation\n' 
-            '/resources - View what your resources are\n' 
+            '/stats - View what your resources are\n' 
             '/rankings - View the rankings of everyone who plays\n' 
-            '/population - View what units you have\n'
             '/buy [units] [number] - Buys n number of units\n'
             '/attack [player] - Attack a player\n'
             '/help [player] - List of commands and rules\n'

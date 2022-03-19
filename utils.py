@@ -1,4 +1,3 @@
-
 """
 ALL FUNCTIONS NOT RELATED TO DISCORD WILL BE IN HERE
     * Queries to database should be functions
@@ -24,14 +23,23 @@ def checkCreation(userID, name):
 def getUserStats(userID):
     return json.dumps(list(db.Nations.find({"userID": userID}, {"_id": 0})))
 
-def getRankings():
+def getRankings(): #Must change to be only top 50
     # return list(db.Nations.find())
     return list(db.Nations.find().sort("population", -1))
 
-def attackSequence():
+
+"""====================================Not Done Functions====================================================="""
+
+def attackSequence(player1, player2):
+    #Request Database for army data
+    pOneUnitCache = {}
+    pTwoUnitCache = {}
     pass
 
 def playerHasShield():
+    pass
+
+def playerExists():
     pass
 
 
