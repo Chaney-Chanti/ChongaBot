@@ -1,10 +1,9 @@
 class createResources:
-    def __init__(self, userID, username, name, ability):
+    def __init__(self, userID, username, name):
         self.userID = userID
         self.username = username
 
         self.name = name
-        self.ability = ability
 
         self.food = 100
         self.timber = 100
