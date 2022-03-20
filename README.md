@@ -13,4 +13,4 @@ In order to develop, you must ask me for the MongoDB connection string and Disco
 
 note to developers:
     1. camelCase variables and functions
-    2. 
+    2. commit messages should start with [Update:, Fix:, Add:, Refactor:] and then the message

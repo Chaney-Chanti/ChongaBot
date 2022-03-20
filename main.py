@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from dotenv import load_dotenv
 import nextcord
 import os
@@ -26,11 +25,11 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-
     msgContent = message.content.split(' ')
     userID = message.author.id
     serverID = message.guild.id
     username = str(message.author)
+    print('DEBUG:', msgContent)
 
     if message.content.startswith('/createNation'): 
         if len(msgContent) != 2:
@@ -38,7 +37,7 @@ async def on_message(message):
         name = msgContent[1]
         userNation = objects.nation.createNation(userID, serverID, username, name)
         userResources = objects.resources.createResources(userID, username, name, time.time())
-        if not utils.checkCreation(userID, name): #Note: we are double checking database here, fix later
+        if not utils.checkCreation(userID, name):
             db.Nations.insert_one(userNation.__dict__)
             db.Resources.insert_one(userResources.__dict__)
             await message.channel.send('Nation Created! Type /stats to show info about your nation!')
@@ -54,7 +53,7 @@ async def on_message(message):
         data = utils.getUserStats(user)
         pprint.pprint(data)
         
-        await message.channel.send( #Figure out a way to make this horizontal than like a column
+        await message.channel.send( #Figure out a way to make this horizontal than like a column (paging)
             '=======' + str(data['name']) + '=======\n'
             'Owner: ' + str(data['username']) + '\n' 
             'Age: ' + str(data['age']) + '\n'
@@ -89,10 +88,9 @@ async def on_message(message):
 
     elif message.content.startswith('/claim'):
         currentTime = time.time()
-        user = message.author.id
-        data = utils.getUserStats(user)
+        data = utils.getUserStats(userID)
         timePassed = int(currentTime - data['resources']['lastClaim'])
-        timePassed = int( timePassed // 3600) # get total number of hours since last claim
+        timePassed = int(timePassed // 3600) # get total number of hours since last claim
 
         if (timePassed > 0):
             # multiply rates for each one . . . 
@@ -104,6 +102,17 @@ async def on_message(message):
             knowledge = data['resources']['knowledgeRate'] * timePassed + data['resources']['knowledge']
 
             db.Resources.update_one({'userID': userID}, {'$set': {'lastClaim': currentTime, 'food': food, 'timber': timber, 'metal': metal, 'wealth': wealth, 'oil': oil, 'knowledge': knowledge}})
+            await message.channel.send(
+                'Resources Claimed:\n'
+                'Food: ' + str(food) + '\n'
+                'Timber: ' + str(timber) + '\n'
+                'Metal: ' + str(metal) + '\n'
+                'Wealth: ' + str(wealth) + '\n'
+                'Oil: ' + str(oil) + '\n'
+                'Knowledge: ' + str(knowledge) + '\n'
+            )
+        else:
+            await message.channel.send('You have already claimed within the hour. Please wait another hour.')
 
     elif message.content.startswith('/army'):
         pass
@@ -115,10 +124,10 @@ async def on_message(message):
         number = msgContent[2]
 
         #I want pop culture references
-        medievalList = ['Citizen', 'Lancer', 'Archer', 'Wizards', 'Dragons']
-        enlightmentList = ['Citizen', 'Minutemen', 'Cannon']
+        medievalList = ['Citizen', 'Lancer', 'Archer', 'Calvalry', 'Trebuchet']
+        enlightmentList = ['Citizen', 'Minutemen', 'General', 'Cannon']
         modernList = ['Citizen', 'Infantry', 'Tank', 'Fighter', 'Bomber', 'ICBM']
-        spaceList = ['Citizen', 'Lazer Cannon', 'Starfighter', 'Battlecruiser', 'Death Star']
+        spaceList = ['Citizen', 'Laser Cannon', 'Starfighter', 'Battlecruiser', 'Death Star']
 
         age = utils.getAge(userID)
         resourceCost = utils.validateBuy(userID, number)
@@ -141,13 +150,22 @@ async def on_message(message):
             await message.channel.send('Incorrect parameters. Format: /attack [player]')
         elif not utils.playerExists(message.mentions[0].id):
             await message.channel.send('This player does not exist')
-        elif utils.checkBattleRatingRange(userID, message.mentions[0].id):
-            await message.channel.send('Player is ranked too either to high or below you')
-        else: 
+        elif message.author.id == message.mentions[0].id:
+            await message.channel.send('You cannot attack yourself!')
+        elif not utils.checkBattleRatingRange(userID, message.mentions[0].id):
+            await message.channel.send('Player rating too either to high or below you(+-100)')
+        else:
+            print('DEBUG:', message.mentions[0].id )
             attackerID = userID
             defenderID = message.mentions[0].id 
-            utils.attackSequence(attackerID, defenderID)
-        
+            data = utils.attackSequence(attackerID, defenderID)
+            await message.channel.send(
+                '=====BATTLE SUMMARY=====\n' +
+                data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
+                'Number of Battles: ' + data['numRounds'] + '\n' +
+                'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
+                'Defender Casualties: ' + data['defenderCasualties'] + '\n'
+            )
     elif message.content.startswith('/Chongahelp'): #Don't know how to make commands not conflict with other bots
         await message.channel.send(
             '========RULES========\n'
