@@ -82,7 +82,7 @@ async def on_message(message):
         rank = 1
         for nation in nations:
             rank = str(rank)
-            rankingString = rankingString + '======\nRank #' + rank +'\nOwner: ' + nation['username'] + '\nNation: ' + nation['name'] + '\Battle Rating: ' + str(nation['battleRating']) + '\n======'
+            rankingString = rankingString + '======\nRank #' + rank +'\nOwner: ' + nation['username'] + '\nNation: ' + nation['name'] + '\nBattle Rating: ' + str(nation['battleRating']) + '\n======'
             rank = int(rank)
             rank +=1
         await message.channel.send(rankingString)
