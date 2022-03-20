@@ -88,7 +88,23 @@ async def on_message(message):
         await message.channel.send(rankingString)
 
     elif message.content.startswith('/claim'):
-        pass
+        currentTime = time.time()
+        user = message.author.id
+        data = utils.getUserStats(user)
+        timePassed = int(currentTime - data['resources']['lastClaim'])
+        timePassed = int( timePassed // 3600) # get total number of hours since last claim
+
+        if (timePassed > 0):
+            # multiply rates for each one . . . 
+            food = data['resources']['foodRate'] * timePassed + data['resources']['food']
+            timber = data['resources']['timberRate'] * timePassed + data['resources']['timber']
+            metal = data['resources']['metalRate'] * timePassed + data['resources']['metal']
+            wealth = data['resources']['wealthRate'] * timePassed + data['resources']['wealth']
+            oil = data['resources']['oilRate'] * timePassed + data['resources']['oil']
+            knowledge = data['resources']['knowledgeRate'] * timePassed + data['resources']['knowledge']
+
+            db.Resources.update_one({'userID': userID}, {'$set': {'lastClaim': currentTime, 'food': food, 'timber': timber, 'metal': metal, 'wealth': wealth, 'oil': oil, 'knowledge': knowledge}})
+
     elif message.content.startswith('/army'):
         pass
     elif message.content.startswith('/buy'): 
