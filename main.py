@@ -78,14 +78,14 @@ async def on_message(message):
         )
     elif message.content.startswith('/rankings'):
         nations = utils.getRankings()
-        nationListString = ''
+        rankingString = ''
         rank = 1
         for nation in nations:
             rank = str(rank)
-            nationListString = nationListString + '======\nRank #' + rank +'\nOwner: ' + nation['username'] + '\nNation: ' + nation['name'] + '\nPopulation: ' + str(nation['population']) + '\n======'
+            rankingString = rankingString + '======\nRank #' + rank +'\nOwner: ' + nation['username'] + '\nNation: ' + nation['name'] + '\Battle Rating: ' + str(nation['battleRating']) + '\n======'
             rank = int(rank)
             rank +=1
-        await message.channel.send(nationListString)
+        await message.channel.send(rankingString)
 
     elif message.content.startswith('/claim'):
         pass
@@ -140,7 +140,7 @@ async def on_message(message):
             'Citizens mine all resources at a certain rate.\n' 
             'You only get one nation for all servers.\n' 
             '========Commands========\n' 
-            '/createNation [name] [ability] - Create a nation\n' 
+            '/createNation [name] - Create a nation\n' 
             '/stats - View what your resources are\n' 
             '/rankings - View the rankings of everyone who plays\n' 
             '/buy [units] [number] - Buys n number of units\n'
