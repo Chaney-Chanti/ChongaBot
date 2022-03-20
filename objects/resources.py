@@ -1,9 +1,10 @@
 class createResources:
-    def __init__(self, userID, username, name):
+    def __init__(self, userID, username, name, epoch):
         self.userID = userID
         self.username = username
-
         self.name = name
+
+        self.lastClaim = epoch
 
         self.food = 100
         self.timber = 100

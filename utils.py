@@ -1,7 +1,3 @@
-"""
-ALL FUNCTIONS NOT RELATED TO DISCORD WILL BE IN HERE
-    * Queries to database should be functions
-"""
 
 import json
 import pymongo
@@ -18,29 +14,47 @@ def badWordFilter(text):
     return client.contains_profanity(text, add='you')
 
 def checkCreation(userID, name):
-    return db.Nations.count_documents({"userID": userID}) > 0 or badWordFilter(name)
+    return db.Nations.count_documents({'_id': userID}) > 0 or badWordFilter(name)
+
+def checkBattleRatingRange(attackerID, defenderID):
+    playerOneRank = json.dumps(list(db.Nations.find({'userID': attackerID}, {'_id': 0})))
+    playerTwoRank = json.dumps(list(db.Nations.find({'userID': defenderID}, {'_id': 0})))
+    return abs(playerOneRank - playerTwoRank) > 100 
 
 def getUserStats(userID):
-    return json.dumps(list(db.Nations.find({"userID": userID}, {"_id": 0})))
+    return list(db.Nations.aggregate([
+        {'$match': {'_id': userID}},
+        {
+            '$lookup': {
+                'from': 'Resources',
+                'localField': '_id',
+                'foreignField': 'userID',
+                'as': 'resources',
+            }
+        },
+        {
+            '$unwind': "$resources"
+        },
+    ]))[0]
 
 def getRankings(): #Must change to be only top 50
     # return list(db.Nations.find())
-    return list(db.Nations.find().sort("population", -1))
+    return list(db.Nations.find().sort('battleRating', -1))
 
-
-"""====================================Not Done Functions====================================================="""
-
-def attackSequence(player1, player2):
+def attackSequence(attackerID, defenderID):
     #Request Database for army data
-    pOneUnitCache = {}
-    pTwoUnitCache = {}
-    pass
+    attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
+    defenderArmy = list(db.Army.find({'userID': defenderID}, {'_id': 0}))[0]
+    # for attackerUnits in attackerArmy:
+        # if attackerUnits != 'userID':
 
-def playerHasShield():
-    pass
+    # for unit in defenderArmy:
+        
+    # print(attackerArmy['archer'])
+    # print(defenderArmy)
 
-def playerExists():
-    pass
+def playerExists(userID):
+    return db.Nations.count_documents({'userID': userID}) > 0
 
 
 

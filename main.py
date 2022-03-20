@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from dotenv import load_dotenv
 import nextcord
 import os
@@ -6,7 +7,8 @@ import json
 import pymongo
 import objects.nation
 import objects.resources
-import subprocess
+import time
+import pprint
 
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
@@ -19,65 +21,62 @@ client = nextcord.Client()
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
-    # subprocess.Popen('py -3 bgProcessing.py')
 
 @client.event
 async def on_message(message):
-    print(message.content)
     if message.author == client.user:
         return
+
     msgContent = message.content.split(' ')
-    print(msgContent)
     userID = message.author.id
     serverID = message.guild.id
     username = str(message.author)
 
     if message.content.startswith('/createNation'): 
-        if len(msgContent) != 3:
-             await message.channel.send('Incorrect parameters. Format: /createNation [name] [ability]')
+        if len(msgContent) != 2:
+             await message.channel.send('Incorrect parameters. Format: /createNation [name]')
         name = msgContent[1]
-        ability = msgContent[2]
-        userNation = objects.nation.createNation(userID, serverID, username, name, ability)
-        userResources = objects.resources.createResources(userID, username, name)
-        if not utils.checkCreation(userID, name):
+        userNation = objects.nation.createNation(userID, serverID, username, name)
+        userResources = objects.resources.createResources(userID, username, name, time.time())
+        if not utils.checkCreation(userID, name): #Note: we are double checking database here, fix later
             db.Nations.insert_one(userNation.__dict__)
             db.Resources.insert_one(userResources.__dict__)
             await message.channel.send('Nation Created! Type /stats to show info about your nation!')
         else:
-            await message.channel.send('You either already have a nation, or profanity was found in the creation...')
-    if message.content.startswith('/stats'):
+            await message.channel.send('You either already have a nation or profanity was found in the creation...')
+    elif message.content.startswith('/stats'):
         if len(msgContent) == 2:
-            user = msgContent[1] #Doesn't work I need to figure out @players
+            user = msgContent[1] 
         elif len(msgContent) == 1:
             user = message.author.id
         else:
              await message.channel.send('Incorrect parameters. Format: /stats or /stats [user]')
-        resources = utils.getUserStats(user)
-        resources = json.loads(resources)
+        data = utils.getUserStats(user)
+        pprint.pprint(data)
+        
         await message.channel.send( #Figure out a way to make this horizontal than like a column
-            '=======' + str(resources[0]['name']) + '=======\n'
-            'Owner: ' + str(resources[0]['username']) + '\n' 
-            'Age: ' + str(resources[0]['age']) + '\n'
-            'Ability: ' + str(resources[0]['ability']) + '\n'
-            'Population: ' + str(resources[0]['population']) + '\n'
-            'Shield: ' + str(resources[0]['shield']['timer']) + '\n'
+            '=======' + str(data['name']) + '=======\n'
+            'Owner: ' + str(data['username']) + '\n' 
+            'Age: ' + str(data['age']) + '\n'
+            'Ability: ' + str(data['ability']) + '\n'
+            'BattleRating: ' + str(data['battleRating']) + '\n'
             '======Resources======\n'
-            'Food: ' + str(resources[0]['food']) + '\n'
-            'Timber: ' + str(resources[0]['timber']) + '\n'
-            'Metal: ' + str(resources[0]['metal']) + '\n'
-            'Oil: ' + str(resources[0]['oil']) + '\n'
-            'Wealth: ' + str(resources[0]['wealth']) + '\n'
-            'Knowledge: ' + str(resources[0]['knowledge']) + '\n'
+            'Food: ' + str(data['resources']['food']) + '\n'
+            'Timber: ' + str(data['resources']['timber']) + '\n'
+            'Metal: ' + str(data['resources']['metal']) + '\n'
+            'Oil: ' + str(data['resources']['oil']) + '\n'
+            'Wealth: ' + str(data['resources']['wealth']) + '\n'
+            'Knowledge: ' + str(data['resources']['knowledge']) + '\n'
             '======Buildings====== \n'
-            'Granary Level: ' + str(resources[0]['granary']['level']) + '\n'
-            'Water Mill Level: ' + str(resources[0]['waterMill']['level']) + '\n'
-            'Quarry Level: ' + str(resources[0]['quarry']['level']) + '\n'
-            'Oil Rig Level: ' + str(resources[0]['oilRig']['level']) + '\n'
-            'Market Level: ' + str(resources[0]['market']['level']) + '\n'
-            'University Level: ' + str(resources[0]['university']['level']) + '\n'
-            'Market Level: ' + str(resources[0]['market']['level']) + '\n'
+            'Granary Level: ' + str(data['granary']['level']) + '\n'
+            'Water Mill Level: ' + str(data['waterMill']['level']) + '\n'
+            'Quarry Level: ' + str(data['quarry']['level']) + '\n'
+            'Oil Rig Level: ' + str(data['oilRig']['level']) + '\n'
+            'Market Level: ' + str(data['market']['level']) + '\n'
+            'University Level: ' + str(data['university']['level']) + '\n'
+            'Market Level: ' + str(data['market']['level']) + '\n'
         )
-    if message.content.startswith('/rankings'):
+    elif message.content.startswith('/rankings'):
         nations = utils.getRankings()
         nationListString = ''
         rank = 1
@@ -87,6 +86,9 @@ async def on_message(message):
             rank = int(rank)
             rank +=1
         await message.channel.send(nationListString)
+
+    elif message.content.startswith('/claim'):
+        pass
     elif message.content.startswith('/army'):
         pass
     elif message.content.startswith('/buy'): 
@@ -100,12 +102,7 @@ async def on_message(message):
         medievalList = ['Citizen', 'Lancer', 'Archer', 'Wizards', 'Dragons']
         enlightmentList = ['Citizen', 'Minutemen', 'Cannon']
         modernList = ['Citizen', 'Infantry', 'Tank', 'Fighter', 'Bomber', 'ICBM']
-        spaceList = ['Citizen', 'Shock Troopers', 'Starfighter', 'Battlecruiser', 'Death Star']
-
-        twitchList = ['Citizen', 'Pogchamps', 'MonkaS', 'KekW', 'KKhona']
-        animeList = ['Citizen', 'Collossal Titan', 'Avatar', 'Pokemon', 'Harem']
-        modernList = ['Citizen', 'Infantry', 'Tank', 'Fighter', 'Bomber', 'ICBM']
-        spaceList = ['Citizen', 'Shock Troopers', 'Starfighter', 'Battlecruiser', 'Death Star']
+        spaceList = ['Citizen', 'Lazer Cannon', 'Starfighter', 'Battlecruiser', 'Death Star']
 
         age = utils.getAge(userID)
         resourceCost = utils.validateBuy(userID, number)
@@ -124,14 +121,16 @@ async def on_message(message):
             pass
 
     elif message.content.startswith('/attack'):
-        if len(msgContent) != 3:
+        if len(msgContent) != 2 or len(message.mentions) == 0:
             await message.channel.send('Incorrect parameters. Format: /attack [player]')
-        elif utils.playerHasShield():
-            await message.channel.send('You cannot attack this player, they have a shield.')
-        elif utils.playerExists():
+        elif not utils.playerExists(message.mentions[0].id):
             await message.channel.send('This player does not exist')
-        else: #Battle Sequence
-            utils.attackSequence(message.player.id, message.player.id2)
+        elif utils.checkBattleRatingRange(userID, message.mentions[0].id):
+            await message.channel.send('Player is ranked too either to high or below you')
+        else: 
+            attackerID = userID
+            defenderID = message.mentions[0].id 
+            utils.attackSequence(attackerID, defenderID)
         
     elif message.content.startswith('/Chongahelp'): #Don't know how to make commands not conflict with other bots
         await message.channel.send(
@@ -146,7 +145,7 @@ async def on_message(message):
             '/rankings - View the rankings of everyone who plays\n' 
             '/buy [units] [number] - Buys n number of units\n'
             '/attack [player] - Attack a player\n'
-            '/help [player] - List of commands and rules\n'
+            '/Chongahelp [player] - List of commands and rules\n'
         )
         
 client.run(TOKEN)
