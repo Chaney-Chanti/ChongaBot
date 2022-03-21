@@ -163,6 +163,8 @@ async def on_message(message):
                 '=====BATTLE SUMMARY=====\n' +
                 data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
                 'Number of Battles: ' + data['numRounds'] + '\n' +
+                data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
+                data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
                 'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
                 'Defender Casualties: ' + data['defenderCasualties'] + '\n'
             )

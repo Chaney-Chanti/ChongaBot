@@ -50,7 +50,6 @@ def getRankings(): #Must change to be only top 50
 
 """GAME SERVICE FUNCTIONS """
 def attackSequence(attackerID, defenderID):
-    #Request Database for army data
     attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
     defenderArmy = list(db.Army.find({'userID': defenderID}, {'_id': 0}))[0]
     unitDiceRolls = {
@@ -79,41 +78,53 @@ def attackSequence(attackerID, defenderID):
             pass
         else:
             print('CURRENT UNIT:', unit)
-            while True:
+            while True: # this needs to change
                 attackerRoll = random.randint(unitDiceRolls[unit]['lowerBound'], unitDiceRolls[unit]['upperBound'])
                 defenderRoll = random.randint(unitDiceRolls[unit]['lowerBound'], unitDiceRolls[unit]['upperBound'])
-                print('attackerRoll', attackerRoll)
-                print('defenderRoll', defenderRoll)
+                # print('attackerRoll', attackerRoll)
+                # print('defenderRoll', defenderRoll)
                 if attackerRoll > defenderRoll:
                     defenderArmy[unit] -= 1
                     if unit in defenderCasualties:
                         defenderCasualties[unit] += 1
                     else:
                        defenderCasualties[unit] = 1
-                    print('defenderUnitsLeft:' , defenderArmy[unit])
+                    # print('defenderUnitsLeft:' , defenderArmy[unit])
                 elif attackerRoll < defenderRoll:
                     attackerArmy[unit] -= 1
                     if unit in attackerCasualties:
                         attackerCasualties[unit] += 1
                     else:
                        attackerCasualties[unit] = 1
-                    print('attackerUnitsLeft:' , attackerArmy[unit])
+                    # print('attackerUnitsLeft:' , attackerArmy[unit])
                 if unit not in attackerArmy or unit not in defenderArmy:
                     break #moves onto the next unit
                 if attackerArmy[unit] == 0:
-                    winner = list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['name']
-                    loser = list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['name']
+                    winnerData = list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]
+                    loserData = list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]
+                    if not loserData['battleRating'] - 25 < 0:
+                        db.Nations.update_one({'_id': defenderID}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
+                        db.Nations.update_one({'_id': attackerID}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
                     break #moves onto the next unit
                 if defenderArmy[unit] == 0:
-                    winner = list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['name']
-                    loser = list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['name']
-                    #update the database
+                    winnerData = list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]
+                    loserData = list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]
+                    if not loserData['battleRating'] - 25 < 0:
+                        db.Nations.update_one({'_id': attackerID}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
+                        db.Nations.update_one({'_id': defenderID}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
                     break #moves onto the next unit
                 numRounds += 1
-        
+    winner = winnerData['name']
+    loser = loserData['name']
+
+    if not loserData['battleRating'] - 25 < 0:
+        loserBR = loserData['battleRating'] - 25
+
     battleSummary = {
         'winner': winner.upper(),
         'loser': loser.upper(),
+        'winnerBattleRating': str(winnerData['battleRating'] + 25),
+        'loserBattleRating': str(loserBR),
         'numRounds': str(numRounds),
         'attackerCasualties': str(attackerCasualties),
         'defenderCasualties': str(defenderCasualties),
