@@ -103,15 +103,15 @@ def attackSequence(attackerID, defenderID):
                     winnerData = list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]
                     loserData = list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]
                     if not loserData['battleRating'] - 25 < 0:
-                        db.Nations.update_one({'_id': defenderID}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
                         db.Nations.update_one({'_id': attackerID}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
+                    db.Nations.update_one({'_id': defenderID}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
                     break #moves onto the next unit
                 if defenderArmy[unit] == 0:
                     winnerData = list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]
                     loserData = list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]
                     if not loserData['battleRating'] - 25 < 0:
-                        db.Nations.update_one({'_id': attackerID}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
                         db.Nations.update_one({'_id': defenderID}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
+                    db.Nations.update_one({'_id': attackerID}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
                     break #moves onto the next unit
                 numRounds += 1
     winner = winnerData['name']
