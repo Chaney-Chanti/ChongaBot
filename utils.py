@@ -119,7 +119,8 @@ def attackSequence(attackerID, defenderID):
 
     if not loserData['battleRating'] - 25 < 0:
         loserBR = loserData['battleRating'] - 25
-
+    loserBR = loserData['battleRating']
+    
     battleSummary = {
         'winner': winner.upper(),
         'loser': loser.upper(),
