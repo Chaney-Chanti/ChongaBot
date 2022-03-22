@@ -4,8 +4,7 @@ import os
 import utils
 import json
 import pymongo
-import objects.nation
-import objects.resources
+import objects.nation, objects.resources, objects.army
 import time
 import pprint
 
@@ -37,9 +36,11 @@ async def on_message(message):
         name = msgContent[1]
         userNation = objects.nation.createNation(userID, serverID, username, name)
         userResources = objects.resources.createResources(userID, username, name, time.time())
+        userArmy = objects.army.createArmy(userID, username, name)
         if not utils.checkCreation(userID, name):
             db.Nations.insert_one(userNation.__dict__)
             db.Resources.insert_one(userResources.__dict__)
+            db.Army.insert_one(userArmy.__dict__)
             await message.channel.send('Nation Created! Type /stats to show info about your nation!')
         else:
             await message.channel.send('You either already have a nation or profanity was found in the creation...')
@@ -162,7 +163,6 @@ async def on_message(message):
             await message.channel.send(
                 '=====BATTLE SUMMARY=====\n' +
                 data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
-                'Number of Battles: ' + data['numRounds'] + '\n' +
                 data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
                 data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
                 'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +

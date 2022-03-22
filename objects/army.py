@@ -4,20 +4,20 @@ class createArmy:
         self.username = username
         self.name = name
 
-        self.army = {
-            'spearmen': 0,
-            'archers': 0,
-            'calvalry': 0,
-            'trebuchets': 0,
-            'minutemen': 0,
-            'cannons': 0,
-            'infantry': 0,
-            'tanks': 0,
-            'fighters': 0,
-            'bombers': 0,
-            'ICBM': 0,
-            'laser cannons': 0,
-            'battle cruisers': 0,
-            'death stars': 0
-        }
+        self.lancer = 0
+        self.archer = 10
+        self.calvalry = 0
+        self.trebuchet = 0
+        self.minutemen = 0
+        self.general = 0
+        self.cannon = 0
+        self.infantry = 0
+        self.tank = 0
+        self.fighter = 0
+        self.bomber = 0
+        self.icbm = 0
+        self.laserCannon = 0
+        self.battleCruiser = 0
+        self.deathStar = 0
+ 
         
