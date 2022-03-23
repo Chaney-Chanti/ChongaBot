@@ -92,7 +92,6 @@ async def on_message(message):
         data = utils.getUserStats(userID)
         timePassed = int(currentTime - data['resources']['lastClaim'])
         timePassed = int(timePassed // 3600) # get total number of hours since last claim
-
         if (timePassed > 0):
             # multiply rates for each one . . . 
             food = data['resources']['foodRate'] * timePassed + data['resources']['food']
@@ -105,12 +104,12 @@ async def on_message(message):
             db.Resources.update_one({'userID': userID}, {'$set': {'lastClaim': currentTime, 'food': food, 'timber': timber, 'metal': metal, 'wealth': wealth, 'oil': oil, 'knowledge': knowledge}})
             await message.channel.send(
                 'Resources Claimed:\n'
-                'Food: ' + str(food) + '\n'
-                'Timber: ' + str(timber) + '\n'
-                'Metal: ' + str(metal) + '\n'
-                'Wealth: ' + str(wealth) + '\n'
-                'Oil: ' + str(oil) + '\n'
-                'Knowledge: ' + str(knowledge) + '\n'
+                'Food: ' + str(data['resources']['foodRate'] * timePassed) + '\n'
+                'Timber: ' + str(data['resources']['timberRate'] * timePassed) + '\n'
+                'Metal: ' + str(data['resources']['metalRate'] * timePassed) + '\n'
+                'Wealth: ' + str(data['resources']['wealthRate'] * timePassed) + '\n'
+                'Oil: ' + str(data['resources']['oilRate'] * timePassed) + '\n'
+                'Knowledge: ' + str(data['resources']['knowledgeRate'] * timePassed) + '\n'
             )
         else:
             await message.channel.send('You have already claimed within the hour. Please wait another hour.')
