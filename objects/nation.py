@@ -1,5 +1,5 @@
 class createNation:
-    def __init__(self, userID, serverID, username, name):
+    def __init__(self, userID, serverID, username, name, epoch):
         self._id = userID
         self.serverOriginID = serverID
         self.username = username
@@ -7,7 +7,8 @@ class createNation:
         self.name = name
         self.ability = 'none'
         self.age = 'Medieval'
-        self.battleRating = 0                  
+        self.battleRating = 0    
+        self.shield = epoch              
 
         self.numCitizens = 0
 

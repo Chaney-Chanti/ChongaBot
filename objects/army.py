@@ -16,8 +16,10 @@ class createArmy:
         self.fighter = 0
         self.bomber = 0
         self.icbm = 0
-        self.laserCannon = 0
-        self.battleCruiser = 0
-        self.deathStar = 0
+        self.shocktrooper = 0
+        self.starfighter = 0
+        self.lasercannon = 0
+        self.battlecruiser = 0
+        self.deathstar = 0
  
         

@@ -32,27 +32,33 @@ async def on_message(message):
 
     if message.content.startswith('/createNation'): 
         if len(msgContent) != 2:
-             await message.channel.send('Incorrect parameters. Format: /createNation [name]')
-        name = msgContent[1]
-        userNation = objects.nation.createNation(userID, serverID, username, name)
-        userResources = objects.resources.createResources(userID, username, name, time.time())
-        userArmy = objects.army.createArmy(userID, username, name)
-        if not utils.checkCreation(userID, name):
-            db.Nations.insert_one(userNation.__dict__)
-            db.Resources.insert_one(userResources.__dict__)
-            db.Army.insert_one(userArmy.__dict__)
-            await message.channel.send('Nation Created! Type /stats to show info about your nation!')
+            await message.channel.send('Incorrect parameters. Format: /createNation [name]')
+        if len(msgContent[1]) > 15:
+            await message.channel.send('Nation Name is too long!')
         else:
-            await message.channel.send('You either already have a nation or profanity was found in the creation...')
+            name = msgContent[1]
+            userNation = objects.nation.createNation(userID, serverID, username, name, time.time())
+            userResources = objects.resources.createResources(userID, username, name, time.time())
+            userArmy = objects.army.createArmy(userID, username, name)
+            if not utils.checkCreation(userID, name):
+                db.Nations.insert_one(userNation.__dict__)
+                db.Resources.insert_one(userResources.__dict__)
+                db.Army.insert_one(userArmy.__dict__)
+                await message.channel.send('Nation Created! Type /stats to show info about your nation!')
+            else:
+                await message.channel.send('You either already have a nation or profanity was found in the creation...')
     elif message.content.startswith('/stats'):
         if len(msgContent) == 2:
-            user = msgContent[1] 
+            if utils.playerExists(message.mentions[0].id):
+                user = message.mentions[0].id
+            else:
+                await message.channel.send('This player does not exist')
         elif len(msgContent) == 1:
             user = message.author.id
         else:
              await message.channel.send('Incorrect parameters. Format: /stats or /stats [user]')
         data = utils.getUserStats(user)
-        pprint.pprint(data)
+        pprint.pprint(data) #Doesn't work with ditc attribute .write
         
         await message.channel.send( #Figure out a way to make this horizontal than like a column (paging)
             '=======' + str(data['name']) + '=======\n'
@@ -116,34 +122,44 @@ async def on_message(message):
 
     elif message.content.startswith('/army'):
         pass
+
     elif message.content.startswith('/buy'): 
         if len(msgContent) != 3:
             await message.channel.send('Incorrect parameters. Format: /buy [unit] [number]')
+        if not msgContent[2].isnumeric():
+            await message.channel.send('You must specify a number of units to buy')
+        else:
+            unit = msgContent[1].lower()
+            numUnits = msgContent[2]
 
-        unit = msgContent[1]
-        number = msgContent[2]
+            #I want pop culture references
+            medievalList = ['citizen', 'lancer', 'archer', 'calvalry', 'trebuchet']
+            enlightmentList = ['citizen', 'minutemen', 'general', 'cannon']
+            modernList = ['citizen', 'infantry', 'tank', 'fighter', 'bomber', 'icbm']
+            spaceList = ['citizen', 'shocktrooper', 'lasercannon', 'starfighter', 'battlecruiser', 'deathstar']
 
-        #I want pop culture references
-        medievalList = ['Citizen', 'Lancer', 'Archer', 'Calvalry', 'Trebuchet']
-        enlightmentList = ['Citizen', 'Minutemen', 'General', 'Cannon']
-        modernList = ['Citizen', 'Infantry', 'Tank', 'Fighter', 'Bomber', 'ICBM']
-        spaceList = ['Citizen', 'Laser Cannon', 'Starfighter', 'Battlecruiser', 'Death Star']
+            age = utils.getAge(userID)
 
-        age = utils.getAge(userID)
-        resourceCost = utils.validateBuy(userID, number)
-
-        if age == 'Medieval':
-            unitList = medievalList
-        elif age == 'Enlightment':
-            unitList = enlightmentList
-        elif age == 'Modern':
-            unitList = modernList
-        elif age == 'Space':
-            unitList = spaceList
-        
-        if unit in unitList and resourceCost > 0:
-            #Go through with the buy
-            pass
+            if age == 'Medieval':
+                unitList = medievalList
+            elif age == 'Enlightment':
+                unitList = enlightmentList
+            elif age == 'Modern':
+                unitList = modernList
+            elif age == 'Space':
+                unitList = spaceList
+            else:
+                unitList = [''] 
+            
+            resourceCost = utils.validateExecuteBuy(userID, unit, numUnits)
+            if str(unit) not in unitList:
+                await message.channel.send('This unit does not exist in the game or you do not have access to this unit.')
+            else:
+                if not resourceCost[0]:
+                    await message.channel.send('You must construct additional pylons (not enough resources)')
+                utils.updateResources(userID, resourceCost[1])
+                utils.updateUnits(userID, unit, numUnits)
+                await message.channel.send('Successfully bought ' + numUnits + ' ' + unit + 's')
 
     elif message.content.startswith('/attack'):
         if len(msgContent) != 2 or len(message.mentions) == 0:
@@ -155,7 +171,7 @@ async def on_message(message):
         elif not utils.checkBattleRatingRange(userID, message.mentions[0].id):
             await message.channel.send('Player rating too either to high or below you(+-100)')
         else:
-            print('DEBUG:', message.mentions[0].id )
+            # print('DEBUG:', message.mentions[0].id )
             attackerID = userID
             defenderID = message.mentions[0].id 
             data = utils.attackSequence(attackerID, defenderID)
@@ -184,6 +200,3 @@ async def on_message(message):
         )
         
 client.run(TOKEN)
-
-
-

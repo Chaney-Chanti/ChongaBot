@@ -1,9 +1,11 @@
 
 import json
+from numpy import true_divide
 import pymongo
 import os
 import random
 import itertools
+import pprint
 from purgo_malum import client
 from dotenv import load_dotenv
 
@@ -11,7 +13,6 @@ load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
 mongoClient = pymongo.MongoClient(CONNECTIONPASSWORD)
 db = mongoClient.ChongaBot
-
 
 """BOOLEAN CHECK FUNCTIONS"""
 def badWordFilter(text):
@@ -23,13 +24,14 @@ def checkCreation(userID, name):
 def checkBattleRatingRange(attackerID, defenderID):
     playerOneRating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battleRating'])
     playerTwoRating = json.dumps(list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['battleRating'])
-    return abs(int(playerOneRating) - int(playerTwoRating)) <= 100 
+    return abs(int(playerOneRating) - int(playerTwoRating)) <= 200 
 
 def playerExists(userID):
     return db.Nations.count_documents({'_id': userID}) > 0
-
+    
 """GET DATA FUNCTIONS"""
 def getUserStats(userID):
+    print('DEBUG:', userID)
     return list(db.Nations.aggregate([
         {'$match': {'_id': userID}},
         {
@@ -46,10 +48,26 @@ def getUserStats(userID):
     ]))[0]
 
 def getRankings(): #Must change to be only top 50
-    return list(db.Nations.find().sort('battleRating', -1))
+    return list(db.Nations.find().sort('battleRating', -1).limit(10))
+
+def getAge(userID):
+    return list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]['age']
+
+"""UPDATE DATA FUNCTIONS"""
+
+def updateResources(userID, resDict):
+    db.Resources.update_one({'userID': userID}, {'$set': resDict})
+    return
+
+def updateUnits(userID, unit, numUnits):
+    data = list(db.Army.find({'userID': userID}, {'_id': 0}))[0]
+    # pprint.pprint(data) debug
+    db.Army.update_one({'userID': userID}, {'$set': {unit: data[unit] + int(numUnits)}})
+    return 
+
 
 """GAME SERVICE FUNCTIONS """
-def attackSequence(attackerID, defenderID):
+def attackSequence(attackerID, defenderID): #problem  with different unit types fighting each other
     attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
     defenderArmy = list(db.Army.find({'userID': defenderID}, {'_id': 0}))[0]
     unitDiceRolls = {
@@ -65,22 +83,25 @@ def attackSequence(attackerID, defenderID):
         'fighter': { 'lowerBound': 3, 'upperBound': 5 },
         'bomber': { 'lowerBound': 3, 'upperBound': 5 },
         'icbm': { 'lowerBound': 3, 'upperBound': 5 },
-        'laserCannon': { 'lowerBound': 3, 'upperBound': 5 },
-        # 'starFighter': { 'lowerBound': 3, 'upperBound': 5 },
-        'battleCruiser': { 'lowerBound': 3, 'upperBound': 5 },
-        'deathStar': { 'lowerBound': 9000, 'upperBound': 10000 },
+        'shocktrooper': { 'lowerBound': 3, 'upperBound': 5 },
+        'lasercannon': { 'lowerBound': 3, 'upperBound': 5 },
+        'starfighter': { 'lowerBound': 3, 'upperBound': 5 },
+        'battlecruiser': { 'lowerBound': 3, 'upperBound': 90000 },
+        'deathstar': { 'lowerBound': 3, 'upperBound': 100000 },
     }
     attackerCasualties = {}
     defenderCasualties = {}
     random.seed(a=None)
     for unit in unitDiceRolls:
-        print(unit, attackerArmy[unit], defenderArmy[unit])
-        if attackerArmy[unit] == 0 or defenderArmy[unit] == 0:
+        # print(unit, attackerArmy[unit], defenderArmy[unit]) 
+        if attackerArmy[unit] == 0 or defenderArmy[unit] == 0: #one person can have no units left
             pass
         else:
             while attackerArmy[unit] > 0 and defenderArmy[unit] > 0:
+                print('UNNNNITTTT:', unit)
                 attackerRoll = random.randint(unitDiceRolls[unit]['lowerBound'], unitDiceRolls[unit]['upperBound'])
                 defenderRoll = random.randint(unitDiceRolls[unit]['lowerBound'], unitDiceRolls[unit]['upperBound'])
+                print(attackerRoll, defenderRoll)
                 if attackerRoll > defenderRoll:
                     if unit in defenderCasualties:
                         defenderCasualties[unit] += 1 # I want to avoid setting the values to 0 in the dict and just write to it
@@ -101,6 +122,8 @@ def attackSequence(attackerID, defenderID):
     winnerData = list(db.Nations.find({'_id': winnerID}, {'_id': 0}))[0]
     db.Nations.update_one({'_id': winnerID}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
     db.Nations.update_one({'_id': loserID}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
+    #implement resource taking
+    #implement taking of army
     battleSummary = {
         'winner': winnerData['name'].upper(),
         'loser': loserData['name'].upper(),
@@ -111,6 +134,35 @@ def attackSequence(attackerID, defenderID):
     }
     return battleSummary
 
+def validateExecuteBuy(userID, unit, numUnits):
+    data = list(db.Resources.find({'userID': userID}, {'_id': 0}))[0]
+    unitCosts = { 
+        'lancer': { 'food': 50, 'timber': 50, },
+        'archer': { 'food': 50, 'timber': 50, },
+        'calvalry': { 'food': 50, 'timber': 50, },
+        'trebuchet': { 'food': 50, 'timber': 50, },
+        'minutemen': { 'food': 50, 'timber': 50, },
+        'general': { 'food': 50, 'timber': 50, },
+        'cannon': { 'food': 50, 'timber': 50, },
+        'infantry': { 'food': 50, 'timber': 50, },
+        'tank': { 'food': 50, 'timber': 50, },
+        'fighter': { 'food': 50, 'timber': 50, },
+        'icbm': { 'food': 50, 'timber': 50, },
+        'shocktrooper': { 'food': 50, 'timber': 50, },   
+        'lasercannon': { 'food': 50, 'timber': 50, },   
+        'starfighter': { 'food': 50, 'timber': 50, },   
+        'battlecruiser': { 'food': 50, 'timber': 50, },   
+        'deathstar': { 'food': 50, 'timber': 50, },   
+    }
 
-
-
+    #calculates the the total cost for the unit you are buying
+    for resource in unitCosts[unit]:
+        unitCosts[unit][resource] *= int(numUnits)
+    totalCost = unitCosts[unit]
+    newResourceBalance = {}
+    # checks to see if you have enough resources
+    for resource in totalCost:
+        newResourceBalance[resource] = data[resource] - totalCost[resource]
+        if data[resource] - totalCost[resource] < 0:
+            return [False]
+    return [True, newResourceBalance]
