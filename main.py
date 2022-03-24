@@ -22,6 +22,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    prefix = '/'
     if message.author == client.user:
         return
     msgContent = message.content.split(' ')
@@ -30,9 +31,9 @@ async def on_message(message):
     username = str(message.author)
     print('DEBUG:', msgContent)
 
-    if message.content.startswith('/createNation'): 
+    if message.content.startswith(prefix +'createNation'): 
         if len(msgContent) != 2:
-            await message.channel.send('Incorrect parameters. Format: /createNation [name]')
+            await message.channel.send('Incorrect parameters. Format: ' + prefix + 'createNation [name]')
         if len(msgContent[1]) > 15:
             await message.channel.send('Nation Name is too long!')
         else:
@@ -44,10 +45,10 @@ async def on_message(message):
                 db.Nations.insert_one(userNation.__dict__)
                 db.Resources.insert_one(userResources.__dict__)
                 db.Army.insert_one(userArmy.__dict__)
-                await message.channel.send('Nation Created! Type /stats to show info about your nation!')
+                await message.channel.send('Nation Created! Type ' + prefix + 'stats to show info about your nation!')
             else:
                 await message.channel.send('You either already have a nation or profanity was found in the creation...')
-    elif message.content.startswith('/stats'):
+    elif message.content.startswith(prefix + 'stats'):
         if len(msgContent) == 2:
             if utils.playerExists(message.mentions[0].id):
                 user = message.mentions[0].id
@@ -56,7 +57,7 @@ async def on_message(message):
         elif len(msgContent) == 1:
             user = message.author.id
         else:
-             await message.channel.send('Incorrect parameters. Format: /stats or /stats [user]')
+             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'stats or ' + prefix + 'stats [user]')
         data = utils.getUserStats(user)
         pprint.pprint(data) #Doesn't work with ditc attribute .write
         
@@ -82,7 +83,7 @@ async def on_message(message):
             'University Level: ' + str(data['university']['level']) + '\n'
             'Market Level: ' + str(data['market']['level']) + '\n'
         )
-    elif message.content.startswith('/rankings'):
+    elif message.content.startswith(prefix + 'rankings'):
         nations = utils.getRankings()
         rankingString = ''
         rank = 1
@@ -93,7 +94,7 @@ async def on_message(message):
             rank +=1
         await message.channel.send(rankingString)
 
-    elif message.content.startswith('/claim'):
+    elif message.content.startswith(prefix + 'claim'):
         currentTime = time.time()
         data = utils.getUserStats(userID)
         timePassed = int(currentTime - data['resources']['lastClaim'])
@@ -120,12 +121,12 @@ async def on_message(message):
         else:
             await message.channel.send('You have already claimed within the hour. Please wait another hour.')
 
-    elif message.content.startswith('/army'):
+    elif message.content.startswith(prefix + 'army'):
         pass
 
-    elif message.content.startswith('/buy'): 
+    elif message.content.startswith(prefix + 'buy'): 
         if len(msgContent) != 3:
-            await message.channel.send('Incorrect parameters. Format: /buy [unit] [number]')
+            await message.channel.send('Incorrect parameters. Format: ' + prefix + 'buy [unit] [number]')
         if not msgContent[2].isnumeric():
             await message.channel.send('You must specify a number of units to buy')
         else:
@@ -161,9 +162,9 @@ async def on_message(message):
                 utils.updateUnits(userID, unit, numUnits)
                 await message.channel.send('Successfully bought ' + numUnits + ' ' + unit + 's')
 
-    elif message.content.startswith('/attack'):
+    elif message.content.startswith(prefix + 'attack'):
         if len(msgContent) != 2 or len(message.mentions) == 0:
-            await message.channel.send('Incorrect parameters. Format: /attack [player]')
+            await message.channel.send('Incorrect parameters. Format: ' + prefix + 'attack [player]')
         elif not utils.playerExists(message.mentions[0].id):
             await message.channel.send('This player does not exist')
         elif message.author.id == message.mentions[0].id:
@@ -183,20 +184,20 @@ async def on_message(message):
                 'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
                 'Defender Casualties: ' + data['defenderCasualties'] + '\n'
             )
-    elif message.content.startswith('/Chongahelp'): #Don't know how to make commands not conflict with other bots
+    elif message.content.startswith(prefix + 'chongahelp'): #Don't know how to make prefixs not conflict with other bots
         await message.channel.send(
             '========RULES========\n'
             'Create your own nation and attack other players.\n' 
             'Manage resources (Food, Timber, Metal, Oil, Wealth, Knowledge) to grow stronger.\n'
             'Citizens mine all resources at a certain rate.\n' 
             'You only get one nation for all servers.\n' 
-            '========Commands========\n' 
-            '/createNation [name] - Create a nation\n' 
-            '/stats - View what your resources are\n' 
-            '/rankings - View the rankings of everyone who plays\n' 
-            '/buy [units] [number] - Buys n number of units\n'
-            '/attack [player] - Attack a player\n'
-            '/Chongahelp [player] - List of commands and rules\n'
+            '========prefixs========\n' +
+            prefix + 'createNation [name] - Create a nation\n' +
+            prefix + 'stats - View what your resources are\n' +
+            prefix + 'rankings - View the rankings of everyone who plays\n' + 
+            prefix + 'buy [units] [number] - Buys n number of units\n' + 
+            prefix + 'attack [player] - Attack a player\n' + 
+            prefix + 'Chongahelp [player] - List of prefixs and rules\n'
         )
         
 client.run(TOKEN)

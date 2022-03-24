@@ -1,6 +1,5 @@
 
 import json
-from numpy import true_divide
 import pymongo
 import os
 import random
