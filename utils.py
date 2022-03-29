@@ -57,9 +57,6 @@ def getRankings(): #Must change to be only top 50
 def getAge(userID):
     return list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]['age']
 
-# def getCostList(unitCosts = unitCosts):
-#     return unitCosts
-
 """UPDATE DATA FUNCTIONS"""
 
 def updateResources(userID, resDict):
@@ -81,6 +78,8 @@ def updateBuilding(userID, building, buildingDict):
     db.Nations.update_one({'_id': userID}, {'$set': {building: buildingDict[building]}}) # switches false to true and level -> 1
     return
 
+def updateNation(userID, data):
+    db.Nations.update_one({'_id': userID}, {'$set': data}) # switches false to true and level -> 1
 
 """GAME SERVICE FUNCTIONS """
 def attackSequence(attackerID, defenderID): #problem  with different unit types fighting each other
@@ -114,10 +113,10 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
             pass
         else:
             while attackerArmy[unit] > 0 and defenderArmy[unit] > 0:
-                print('UNNNNITTTT:', unit)
+                # print('UNNNNITTTT:', unit)
                 attackerRoll = random.randint(unitDiceRolls[unit]['lowerBound'], unitDiceRolls[unit]['upperBound'])
                 defenderRoll = random.randint(unitDiceRolls[unit]['lowerBound'], unitDiceRolls[unit]['upperBound'])
-                print(attackerRoll, defenderRoll)
+                # print(attackerRoll, defenderRoll)
                 if attackerRoll > defenderRoll:
                     if unit in defenderCasualties:
                         defenderCasualties[unit] += 1 # I want to avoid setting the values to 0 in the dict and just write to it
@@ -136,8 +135,11 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
 
     loserData = list(db.Nations.find({'_id': loserID}, {'_id': 0}))[0]
     winnerData = list(db.Nations.find({'_id': winnerID}, {'_id': 0}))[0]
+    if loserData['battleRating'] - 25 >= 0:
+        db.Nations.update_one({'_id': loserID}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
+    if loserData['battleRating'] - 25 < 0:
+        db.Nations.update_one({'_id': loserID}, {'$set': {'battleRating': 0}})
     db.Nations.update_one({'_id': winnerID}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
-    db.Nations.update_one({'_id': loserID}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
     #implement resource taking
     #implement taking of army
     battleSummary = {
@@ -185,12 +187,19 @@ def validateExecuteBuy(userID, unit, numUnits):
     return [True, newResourceBalance]
 
 def buyBuilding(userID, building):
-    rateIncrease = 100
+    age = getAge(userID)
+    if age == 'Medieval':
+        rateIncrease = 100
+    elif age == 'Enlightment':
+        rateIncrease = 200    
+    if age == 'Modern':
+        rateIncrease = 300
+    if age == 'Space':
+        rateIncrease = 400
     resData = list(db.Resources.find({'userID': userID}, {'_id': 0}))[0]
     pprint.pprint(resData)
     nationData = list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]
     pprint.pprint(nationData)
-    # resRate = data['']
     buildingCosts = { 
         'granary': { 'food': 50, 'timber': 50, },
         'watermill': { 'food': 50, 'timber': 50, },
@@ -200,22 +209,52 @@ def buyBuilding(userID, building):
         'university': { 'food': 50, 'timber': 50, },
     }
     cost = buildingCosts[building]
+    
     for resource in cost:
-        resData[resource] -= cost[resource]
-    updateResources(userID, resData)
-    nationData[building]['numBuildings'] += 1
-    nationData[building]['built'] = True
-    if building == 'granary': 
-        resData['foodrate'] += rateIncrease
-    if building == 'watermill': 
-        resData['timberrate'] += rateIncrease
-    if building == 'quarry': 
-        resData['metalrate'] += rateIncrease
-    if building == 'oilrig': 
-        resData['oilrate'] += rateIncrease
-    if building == 'market': 
-        resData['wealthrate'] += rateIncrease
-    if building == 'university': 
-        resData['knowledgerate'] += rateIncrease
-    updateBuilding(userID, building, nationData)
-    updateResourceRate(userID, resData)
+        if resData[resource] - cost[resource] >= 0:
+            resData[resource] -= cost[resource]
+            updateResources(userID, resData)
+            nationData[building]['numBuildings'] += 1
+            nationData[building]['built'] = True
+            if building == 'granary': 
+                resData['foodrate'] += rateIncrease
+            if building == 'watermill': 
+                resData['timberrate'] += rateIncrease
+            if building == 'quarry': 
+                resData['metalrate'] += rateIncrease
+            if building == 'oilrig': 
+                resData['oilrate'] += rateIncrease
+            if building == 'market': 
+                resData['wealthrate'] += rateIncrease
+            if building == 'university': 
+                resData['knowledgerate'] += rateIncrease
+            updateBuilding(userID, building, nationData)
+            updateResourceRate(userID, resData)
+            return True
+        else:
+            return False
+
+def upgradeAge(userID):
+    userData = getUserStats(userID)
+    pprint.pprint(userData)    
+    if userData['age'] == 'Medieval':
+        nextAge = 'Enlightment'
+    elif userData['age'] == 'Enlightment':
+        nextAge = 'Modern'
+    elif userData['age'] == 'Modern':
+        nextAge = 'Space'
+    elif userData['age'] == 'Space':
+        nextAge = ''
+    if nextAge == '':
+        return False
+    ageCosts = {
+        'Enlightment': 50000,
+        'Modern': 200000,
+        'Space': 1000000,
+    }
+    if userData['resources']['knowledge'] - ageCosts[nextAge] > 0:
+        knowledgeCost = {'knowledge': userData['resources']['knowledge'] - ageCosts[nextAge]}
+        updateResources(userID, knowledgeCost)
+        updateNation(userID, {'age': nextAge})        
+        return [True, nextAge]
+    return False

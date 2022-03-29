@@ -8,11 +8,16 @@ class createNation:
         self.ability = 'none'
         self.age = 'Medieval'
         self.battleRating = 0    
+        self.lastRoll = 0
+        self.ownedAbiltiies = []
+        self.matchHistory = {
+            'attacker': '',
+            'summary': '',
+        }
 
         self.granary = { 
             'numBuildings': 0,
             'built': False,
-            'rateMultiplier': 0
         }
         self.watermill = {
             'numBuildings': 0,
@@ -38,13 +43,3 @@ class createNation:
             'isOn': False,
             'epoch': epoch
         }
-    
-
-
- 
-        
-
-                
-            
-
-        

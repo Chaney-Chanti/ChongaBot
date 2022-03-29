@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import nextcord
 import os
-
 import utils
 import json
 import pymongo
@@ -20,6 +19,7 @@ client = nextcord.Client()
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
+    print('Currently in ' + str(len(client.guilds)) + ' servers');
 
 @client.event
 async def on_message(message):
@@ -35,7 +35,7 @@ async def on_message(message):
 
     if message.content.startswith(prefix +'createnation'): 
         if len(msgContent) != 2:
-            await message.channel.send('Incorrect parameters. Format: ' + prefix + 'createNation [name]')
+            await message.channel.send('Incorrect parameters. Format: ' + prefix + 'createnation [name]')
         if len(msgContent[1]) > 15:
             await message.channel.send('Nation Name is too long!')
         else:
@@ -83,7 +83,6 @@ async def on_message(message):
             'Oil Rigs: ' + str(data['oilrig']['numBuildings']) + '\n'
             'Markets: ' + str(data['market']['numBuildings']) + '\n'
             'Universities: ' + str(data['university']['numBuildings']) + '\n'
-            'Markets: ' + str(data['market']['numBuildings']) + '\n'
         )
     elif message.content.startswith(prefix + 'leaderboard'):
         nations = utils.getRankings()
@@ -178,7 +177,7 @@ async def on_message(message):
                     'shocktrooper - cost: 50 food, 50 timber |  Roll 3-5\n'
                     'starfighter - cost: 50 food, 50 timber | Roll: 5-10\n'
                     'lasercannon - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'battkecruiser - cost: 50 food, 50 timber |  Roll 3-5\n'
+                    'battlecruiser - cost: 50 food, 50 timber |  Roll 3-5\n'
                     'deathstar - cost: 50 food, 50 timber |  Roll 3-5\n'
                 )
         elif not msgContent[2].isnumeric():
@@ -228,11 +227,18 @@ async def on_message(message):
                 'University -cost:  50 timber, 50 metal, 50 wealth \n'
             )
         elif len(msgContent) == 2 and msgContent[1] in buildings:
-            utils.buyBuilding(userID, msgContent[1].lower())
-            await message.channel.send('Successfully built ' + msgContent[1])
-
+            if utils.buyBuilding(userID, msgContent[1].lower()):
+                await message.channel.send('Successfully built ' + msgContent[1])
+            else:
+                await message.channel.send('Bruh Moment... (not enough resources)')
         else:
             await message.channel.send('This building does not exist.')
+    elif message.content.startswith(prefix + 'nextage'):
+        result = utils.upgradeAge(userID)
+        if result[0]:
+            await message.channel.send('Successfully advanced to the ' + result[1] + ' age!')
+        else:
+            await message.channel.send('You got no M\'s in ur bank account (not enough resources) or you\'re just maxed out.')
 
     elif message.content.startswith(prefix + 'attack'):
         if len(msgContent) != 2 or len(message.mentions) == 0:
@@ -270,6 +276,8 @@ async def on_message(message):
             prefix + 'stats - Info on your nation\n' +
             prefix + 'leaderboard - View the rankings of everyone who plays\n' + 
             prefix + 'claim - Collect resources (every hour)\n' +
+            prefix + 'c!nextage - Go to the next age!\n' +
+            prefix + 'c!ages - Info on ages\n' +
             prefix + 'shop - Info on units you can purchase\n' + 
             prefix + 'shop [units] [number] - Buys n number of units\n' + 
             prefix + 'build - Info on buildings you can build\n' + 
@@ -277,5 +285,4 @@ async def on_message(message):
             prefix + 'attack [player] - Attack a player (wins +25, losses -25)\n' + 
             prefix + 'help [player] - List of commands and rules\n'
         )
-        
 client.run(TOKEN)
