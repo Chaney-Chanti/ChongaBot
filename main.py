@@ -101,6 +101,8 @@ async def on_message(message):
         data = utils.getUserStats(userID)
         timePassed = int(currentTime - data['resources']['lastClaim'])
         timePassed = int(timePassed // 3600) # get total number of hours since last claim
+        if timePassed >= 48:
+            timePassed = 48
         if (timePassed > 0):
             # multiply rates for each one . . . 
             food = data['resources']['foodrate'] * timePassed + data['resources']['food']
