@@ -1,11 +1,11 @@
-### ChongaBot
+# ChongaBot
 Built with Nextcord and MongoDB
 
-### Rules
-# Description
+# Rules
+## Description
 Build a nation, and gather resources to grow stronger, and defeat your enemies.
 
-# How to play
+## How to play
 Gather resources {Food, Timber, Metal, Wealth, Oil, and Knowledge}. At the start, every resource
 is mined at a rate of 100. Build buildings {Granary, Water Mill, Quarry, Market, Oil Rig, University}.
 to increase the rate of resource production which will also be increased based on age {Medieval(starting)[+100], Enlightment[+200], Modern[+300], Space[+400]}.
@@ -19,17 +19,17 @@ Attacked players gain a 24 hour shield to rebuild and cannot be attacked. You ma
 To get set up, run the following in your cloned directory (Windows).
 You must also have python installed and git.
 
-pip install nextcord
-pip install pymongo
-pip install "pymongo[srv]"
-pip install python-dotenv
-pip install PurgoMalum
+pip install nextcord __ 
+pip install pymongo __
+pip install "pymongo[srv]" __
+pip install python-dotenv __
+pip install PurgoMalum __
 
 ## Credits
-Chaney Chantipaporn
-Sara Kwon
-Jeffrey Hwang
-Michael Tran
+Chaney Chantipaporn __
+Sara Kwon __
+Jeffrey Hwang __
+Michael Tran __
 
 
 ## For Collaborators
