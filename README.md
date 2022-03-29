@@ -19,17 +19,17 @@ Attacked players gain a 24 hour shield to rebuild and cannot be attacked. You ma
 To get set up, run the following in your cloned directory (Windows).
 You must also have python installed and git.
 
-pip install nextcord __ 
-pip install pymongo __
-pip install "pymongo[srv]" __
-pip install python-dotenv __
-pip install PurgoMalum __
+pip install nextcord   
+pip install pymongo  
+pip install "pymongo[srv]"  
+pip install python-dotenv  
+pip install PurgoMalum  
 
 ## Credits
-Chaney Chantipaporn __
-Sara Kwon __
-Jeffrey Hwang __
-Michael Tran __
+Chaney Chantipaporn  
+Sara Kwon  
+Jeffrey Hwang  
+Michael Tran  
 
 
 ## For Collaborators
