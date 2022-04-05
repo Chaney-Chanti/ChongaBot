@@ -7,6 +7,7 @@ import pymongo
 import objects.nation, objects.resources, objects.army
 import time
 import pprint
+import random
 
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
@@ -285,4 +286,21 @@ async def on_message(message):
             prefix + 'attack [player] - Attack a player (wins +25, losses -25)\n' + 
             prefix + 'help [player] - List of commands and rules\n'
         )
+    elif message.content.startswith(prefix + 'roll'):
+        # for now: 4 different rarities. Normal, Rare, Epic, Legendary 
+        # rates: [80, 15, 4, 1] 
+        # we make a dictionary of abilities, each with their respective weights,
+        # e.g. each item will consist of Name, Rarity, Weight, Description
+        # how they will actually change things will be for the future 
+        weightSum = 0
+        abilities = [80, 15, 4, 1] #store a list of all available abilities in mongoDB? 
+        for i in abilities:
+            weightSum += abilities[i]
+        rnd = random.randrange(0, weightSum) 
+        for i in abilities: # for each augment in the list
+            if rnd < abilities[i]: # if rnd < current augment weight
+                pulledAugment = abilities[i]
+            rnd -= abilities[i]
+        
+
 client.run(TOKEN)
