@@ -36,7 +36,7 @@ async def on_message(message):
     if message.content.startswith(prefix +'createnation'): 
         if len(msgContent) != 2:
             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'createnation [name]')
-        if len(msgContent[1]) > 15:
+        if len(msgContent[1]) > 20:
             await message.channel.send('Nation Name is too long!')
         else:
             name = msgContent[1]
@@ -64,7 +64,7 @@ async def on_message(message):
         # pprint.pprint(data) #Doesn't work with dict attribute .write
         
         await message.channel.send( #Figure out a way to make this horizontal than like a column (paging)
-            '=======' + str(data['name']) + '=======\n'
+            '```=======' + str(data['name']) + '=======\n'
             'Owner: ' + str(data['username']) + '\n' 
             'Age: ' + str(data['age']) + '\n'
             'Ability: ' + str(data['ability']) + '\n'
@@ -78,11 +78,11 @@ async def on_message(message):
             'Knowledge: ' + str(data['resources']['knowledge']) + '\n'
             '======Buildings====== \n'
             'Granaries: ' + str(data['granary']['numBuildings']) + '\n'
-            'Watermills: ' + str(data['watermill']['numBuildings']) + '\n'
+            'Lumbermills: ' + str(data['lumbermill']['numBuildings']) + '\n'
             'Quarries: ' + str(data['quarry']['numBuildings']) + '\n'
             'Oil Rigs: ' + str(data['oilrig']['numBuildings']) + '\n'
             'Markets: ' + str(data['market']['numBuildings']) + '\n'
-            'Universities: ' + str(data['university']['numBuildings']) + '\n'
+            'Universities: ' + str(data['university']['numBuildings']) + '\n```'
         )
     elif message.content.startswith(prefix + 'leaderboard'):
         nations = utils.getRankings()
@@ -93,7 +93,7 @@ async def on_message(message):
             rankingString = rankingString + '======\nRank #' + rank +'\nOwner: ' + nation['username'] + '\nNation: ' + nation['name'] + '\nBattle Rating: ' + str(nation['battleRating']) + '\n======'
             rank = int(rank)
             rank +=1
-        await message.channel.send(rankingString)
+        await message.channel.send('```' + rankingString + '```')
 
     elif message.content.startswith(prefix + 'claim'):
         currentTime = time.time()
@@ -113,13 +113,13 @@ async def on_message(message):
 
             db.Resources.update_one({'userID': userID}, {'$set': {'lastClaim': currentTime, 'food': food, 'timber': timber, 'metal': metal, 'wealth': wealth, 'oil': oil, 'knowledge': knowledge}})
             await message.channel.send(
-                'Resources Claimed:\n'
+                '```Resources Claimed:\n'
                 'Food: ' + str(data['resources']['foodrate'] * timePassed) + '\n'
                 'Timber: ' + str(data['resources']['timberrate'] * timePassed) + '\n'
                 'Metal: ' + str(data['resources']['metalrate'] * timePassed) + '\n'
                 'Wealth: ' + str(data['resources']['wealthrate'] * timePassed) + '\n'
                 'Oil: ' + str(data['resources']['oilrate'] * timePassed) + '\n'
-                'Knowledge: ' + str(data['resources']['knowledgerate'] * timePassed) + '\n'
+                'Knowledge: ' + str(data['resources']['knowledgerate'] * timePassed) + '\n```'
             )
         else:
             await message.channel.send('You have already claimed within the hour. Please wait another hour.')
@@ -149,36 +149,36 @@ async def on_message(message):
             age = utils.getAge(userID)
             if age == 'Medieval':
                 await message.channel.send(
-                    '===Units You Can Buy=== \n'
-                    'Lancers - cost: 50 food, 50 timber | Roll: 3-5\n'
-                    'Archers - cost: 50 food, 50 timber | Roll: 5-10\n'
-                    'Calvalry - cost: 50 food, 50 timber | Roll 3-5\n'
-                    'Trebuchet - cost: 50 food, 50 timber |  Roll 3-5\n'
+                    '```===Units You Can Buy=== \n'
+                    'Lancers - cost: 50 food, 50 timber | Roll: 1-5\n'
+                    'Archers - cost: 100 food, 100 timber | Roll: 1-15\n'
+                    'Calvalry - cost: 200 food, 200 timber | Roll 1-20\n'
+                    'Trebuchet - cost: 300 food, 300 timber |  Roll 1-50\n```'
                 )
             if age == 'Enlightment':
                  await message.channel.send(
-                    '===Units You Can Buy=== \n'
-                    'minutemen - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'general - cost: 50 food, 50 timber | Roll: 5-10\n'
-                    'cannon - cost: 50 food, 50 timber |  Roll 3-5\n'
+                    '```===Units You Can Buy=== \n'
+                    'minutemen - cost: 50 food, 50 timber |  Roll 1-30\n'
+                    'general - cost: 50 food, 50 timber | Roll: 1-50\n'
+                    'cannon - cost: 50 food, 50 timber |  Roll 1-50\n```'
                 )
             if age == 'Modern':
                  await message.channel.send(
-                    '===Units You Can Buy=== \n'
+                    '```===Units You Can Buy=== \n'
                     'infantry - cost: 50 food, 50 timber |  Roll 3-5\n'
                     'tank- cost: 50 food, 50 timber | Roll: 5-10\n'
                     'fighter - cost: 50 food, 50 timber |  Roll 3-5\n'
                     'bomber - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'icbm - cost: 50 food, 50 timber |  Roll 3-5\n'
+                    'icbm - cost: 50 food, 50 timber |  Roll 3-5\n```'
                 )
             if age == 'Space':
                  await message.channel.send(
-                    '===Units You Can Buy=== \n'
+                    '```===Units You Can Buy=== \n'
                     'shocktrooper - cost: 50 food, 50 timber |  Roll 3-5\n'
                     'starfighter - cost: 50 food, 50 timber | Roll: 5-10\n'
                     'lasercannon - cost: 50 food, 50 timber |  Roll 3-5\n'
                     'battlecruiser - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'deathstar - cost: 50 food, 50 timber |  Roll 3-5\n'
+                    'deathstar - cost: 50 food, 50 timber |  Roll 3-5\n```'
                 )
         elif not msgContent[2].isnumeric():
             await message.channel.send('You must specify a number of units to buy')
@@ -215,16 +215,16 @@ async def on_message(message):
                 utils.updateUnits(userID, unit, numUnits)
                 await message.channel.send('Successfully bought ' + numUnits + ' ' + unit + 's')
     elif message.content.startswith(prefix + 'build'):
-        buildings = ['granary', 'watermill', 'quarry', 'oilrig', 'market', 'university']
+        buildings = ['granary', 'lumbermill', 'quarry', 'oilrig', 'market', 'university']
         if len(msgContent) == 1:
             await message.channel.send(
-                '=====Buildings=====\n'
-                'Granary - cost: 50 timber, 50 metal, 50 wealth\n'
-                'Water Mill - cost:  50 timber, 50 metal, 50 wealth\n'
-                'Quarry - cost:  50 timber, 50 metal, 50 wealth\n'
-                'Oil Rig - cost: 100 metal, 100 wealth\n'
-                'Market - cost:  50 timber, 50 metal, 50 wealth \n'
-                'University -cost:  50 timber, 50 metal, 50 wealth \n'
+                '```=====Buildings=====\n'
+                'Granary - cost: 1000 timber, 1000 metal\n'
+                'Lumbermill - cost:  3000 timber, 3000 metal\n'
+                'Quarry - cost:  3000 timber, 3000 metal\n'
+                'Oil Rig - cost: 5000 metal, 5000 wealth\n'
+                'Market - cost:  1000 food, 1000 timber, 1000 wealth \n'
+                'University - cost:  1500 timber, 1500 metal, 1500 wealth \n```'
             )
         elif len(msgContent) == 2 and msgContent[1] in buildings:
             if utils.buyBuilding(userID, msgContent[1].lower()):
@@ -235,6 +235,7 @@ async def on_message(message):
             await message.channel.send('This building does not exist.')
     elif message.content.startswith(prefix + 'nextage'):
         result = utils.upgradeAge(userID)
+        print(result)
         if result[0]:
             await message.channel.send('Successfully advanced to the ' + result[1] + ' age!')
         else:
@@ -249,6 +250,8 @@ async def on_message(message):
             await message.channel.send('You cannot attack yourself!')
         elif not utils.checkBattleRatingRange(userID, message.mentions[0].id):
             await message.channel.send('Player rating too either to high or below you(+-300)')
+        # elif not utils.canAttack(message.mentions[0].id, time.time()):
+        #     await message.channel.send('This player has a shield, you can\'t attack them.')
         else:
             # print('DEBUG:', message.mentions[0].id )
             attackerID = userID
@@ -264,7 +267,7 @@ async def on_message(message):
             )
     elif message.content.startswith(prefix + 'help'): #Don't know how to make prefixs not conflict with other bots
         await message.channel.send(
-            '========RULES========\n'
+            '```========RULES========\n'
             'Create your own nation and attack other players.\n' 
             'Manage resources (Food, Timber, Metal, Oil, Wealth, Knowledge) to grow stronger.\n'
             'Citizens mine all resources at a certain rate.\n' 
@@ -276,13 +279,14 @@ async def on_message(message):
             prefix + 'stats - Info on your nation\n' +
             prefix + 'leaderboard - View the rankings of everyone who plays\n' + 
             prefix + 'claim - Collect resources (every hour)\n' +
-            prefix + 'c!nextage - Go to the next age!\n' +
-            prefix + 'c!ages - Info on ages\n' +
+            prefix + 'nextage - Go to the next age!\n' +
+            prefix + 'ages - Info on ages\n' +
             prefix + 'shop - Info on units you can purchase\n' + 
             prefix + 'shop [units] [number] - Buys n number of units\n' + 
             prefix + 'build - Info on buildings you can build\n' + 
             prefix + 'build [building] - Build this building\n' +
             prefix + 'attack [player] - Attack a player (wins +25, losses -25)\n' + 
-            prefix + 'help [player] - List of commands and rules\n'
+            prefix + 'help [player] - List of commands and rules\n```'
         )
+        
 client.run(TOKEN)

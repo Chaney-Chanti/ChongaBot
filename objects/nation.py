@@ -19,7 +19,7 @@ class createNation:
             'numBuildings': 0,
             'built': False,
         }
-        self.watermill = {
+        self.lumbermill = {
             'numBuildings': 0,
             'built': False
         }   

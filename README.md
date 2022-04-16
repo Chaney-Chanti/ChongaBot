@@ -2,10 +2,10 @@
 Built with Nextcord and MongoDB
 
 # Rules
-## Description
-Build a nation, and gather resources to grow stronger, and defeat your enemies.
+### Description
+Build a nation, gather resources to grow stronger, and defeat your enemies.
 
-## How to play
+### How to play
 Gather resources {Food, Timber, Metal, Wealth, Oil, and Knowledge}. At the start, every resource
 is mined at a rate of 100. Build buildings {Granary, Water Mill, Quarry, Market, Oil Rig, University}.
 to increase the rate of resource production which will also be increased based on age {Medieval(starting)[+100], Enlightment[+200], Modern[+300], Space[+400]}.
@@ -27,7 +27,7 @@ pip install PurgoMalum
 
 ## Credits
 Chaney Chantipaporn  
-Sara Kwon  
+Sarah Kwon  
 Jeffrey Hwang  
 Michael Tran  
 

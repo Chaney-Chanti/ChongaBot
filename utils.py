@@ -29,6 +29,9 @@ def checkBattleRatingRange(attackerID, defenderID):
 
 def playerExists(userID):
     return db.Nations.count_documents({'_id': userID}) > 0
+
+def canAttack(defenderID, currTime):
+    return list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['shield']['epoch'] + 86400 > currTime
     
 """GET DATA FUNCTIONS"""
 def getUserStats(userID):
@@ -86,23 +89,23 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
     attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
     defenderArmy = list(db.Army.find({'userID': defenderID}, {'_id': 0}))[0]
     unitDiceRolls = {
-        'lancer': { 'lowerBound': 3, 'upperBound': 5},
-        'archer': { 'lowerBound': 3, 'upperBound': 10},
-        'calvalry': { 'lowerBound': 3, 'upperBound': 5},
-        'trebuchet': {'lowerBound': 3, 'upperBound': 5},
-        'minutemen': { 'lowerBound': 3, 'upperBound': 5},
-        'general': { 'lowerBound': 3, 'upperBound': 5},
-        'cannon': { 'lowerBound': 3, 'upperBound': 5 },
-        'infantry': { 'lowerBound': 3, 'upperBound': 5 },
-        'tank': { 'lowerBound': 3, 'upperBound': 5 },
-        'fighter': { 'lowerBound': 3, 'upperBound': 5 },
-        'bomber': { 'lowerBound': 3, 'upperBound': 5 },
-        'icbm': { 'lowerBound': 3, 'upperBound': 5 },
-        'shocktrooper': { 'lowerBound': 3, 'upperBound': 5 },
-        'lasercannon': { 'lowerBound': 3, 'upperBound': 5 },
-        'starfighter': { 'lowerBound': 3, 'upperBound': 5 },
-        'battlecruiser': { 'lowerBound': 3, 'upperBound': 90000 },
-        'deathstar': { 'lowerBound': 3, 'upperBound': 100000 },
+        'lancer': { 'lowerBound': 1, 'upperBound': 5},
+        'archer': { 'lowerBound': 1, 'upperBound': 15},
+        'calvalry': { 'lowerBound': 1, 'upperBound': 30},
+        'trebuchet': {'lowerBound': 1, 'upperBound': 50},
+        'minutemen': { 'lowerBound': 1, 'upperBound': 50},
+        'general': { 'lowerBound': 1, 'upperBound': 5},
+        'cannon': { 'lowerBound': 1, 'upperBound': 5 },
+        'infantry': { 'lowerBound': 1, 'upperBound': 5 },
+        'tank': { 'lowerBound': 1, 'upperBound': 5 },
+        'fighter': { 'lowerBound': 1, 'upperBound': 5 },
+        'bomber': { 'lowerBound': 1, 'upperBound': 5 },
+        'icbm': { 'lowerBound': 1, 'upperBound': 5 },
+        'shocktrooper': { 'lowerBound': 1, 'upperBound': 5 },
+        'lasercannon': { 'lowerBound': 1, 'upperBound': 5 },
+        'starfighter': { 'lowerBound': 1, 'upperBound': 5 },
+        'battlecruiser': { 'lowerBound': 1, 'upperBound': 90000 }, 
+        'deathstar': { 'lowerBound': 1, 'upperBound': 100000 },
     }
     attackerCasualties = {}
     defenderCasualties = {}
@@ -156,21 +159,21 @@ def validateExecuteBuy(userID, unit, numUnits):
     data = list(db.Resources.find({'userID': userID}, {'_id': 0}))[0]
     unitCosts = { 
         'lancer': { 'food': 50, 'timber': 50, },
-        'archer': { 'food': 50, 'timber': 50, },
-        'calvalry': { 'food': 50, 'timber': 50, },
-        'trebuchet': { 'food': 50, 'timber': 50, },
-        'minutemen': { 'food': 50, 'timber': 50, },
-        'general': { 'food': 50, 'timber': 50, },
-        'cannon': { 'food': 50, 'timber': 50, },
-        'infantry': { 'food': 50, 'timber': 50, },
-        'tank': { 'food': 50, 'timber': 50, },
-        'fighter': { 'food': 50, 'timber': 50, },
-        'icbm': { 'food': 50, 'timber': 50, },
-        'shocktrooper': { 'food': 50, 'timber': 50, },
-        'lasercannon': { 'food': 50, 'timber': 50, },
-        'starfighter': { 'food': 50, 'timber': 50, },
-        'battlecruiser': { 'food': 50, 'timber': 50, },
-        'deathstar': { 'food': 50, 'timber': 50, },
+        'archer': { 'food': 100, 'timber': 100, },
+        'calvalry': { 'food': 200, 'timber': 200, },
+        'trebuchet': { 'food': 300, 'timber': 300, },
+        'minutemen': { 'food': 100, 'metal': 100, },
+        'general': { 'food': 200, 'metal': 200, 'wealth': 100},
+        'cannon': { 'food': 200, 'timber': 100, 'metal': 200, 'wealth': 100},
+        'infantry': { 'food': 300, 'metal': 300, 'wealth': 300},
+        'tank': { 'metal': 1000, 'oil': 1000, 'wealth': 1000},
+        'fighter': { 'metal': 2000, 'oil': 2000, 'wealth': 2000},
+        'icbm': { 'metal': 10000, 'oil': 10000, 'wealth': 10000},
+        'shocktrooper': { 'metal': 2000, 'oil': 500, 'metal': 2000},
+        'lasercannon': { 'metal': 15000, 'oil': 15000, 'wealth': 15000},
+        'starfighter': { 'metal': 25000, 'oil': 20000, 'wealth': 20000},
+        'battlecruiser': { 'metal': 30000, 'oil': 30000, 'wealth': 30000},
+        'deathstar': { 'metal': 100000, 'oil': 100000, 'wealth': 100000},
     }
     #calculates the the total cost for the unit you are buying
     for resource in unitCosts[unit]:
@@ -201,12 +204,12 @@ def buyBuilding(userID, building):
     nationData = list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]
     pprint.pprint(nationData)
     buildingCosts = { 
-        'granary': { 'food': 50, 'timber': 50, },
-        'watermill': { 'food': 50, 'timber': 50, },
-        'quarry': { 'food': 50, 'timber': 50, },
-        'market': { 'food': 50, 'timber': 50, },
-        'oilrig': { 'food': 50, 'timber': 50, },
-        'university': { 'food': 50, 'timber': 50, },
+        'granary': { 'timber': 1000, 'metal': 1000, },
+        'lumbermill': { 'timber': 3000, 'metal': 3000, },
+        'quarry': { 'timber': 3000, 'metal': 3000, },
+        'oilrig': { 'metal': 5000, 'wealth': 5000, },
+        'market': { 'food': 1000, 'timber': 1000, 'wealth': 1000,},
+        'university': { 'timber': 1500, 'metal': 1500, 'wealth': 1500,},
     }
     cost = buildingCosts[building]
     
@@ -218,7 +221,7 @@ def buyBuilding(userID, building):
             nationData[building]['built'] = True
             if building == 'granary': 
                 resData['foodrate'] += rateIncrease
-            if building == 'watermill': 
+            if building == 'lumbermill': 
                 resData['timberrate'] += rateIncrease
             if building == 'quarry': 
                 resData['metalrate'] += rateIncrease
@@ -236,7 +239,7 @@ def buyBuilding(userID, building):
 
 def upgradeAge(userID):
     userData = getUserStats(userID)
-    pprint.pprint(userData)    
+    # pprint.pprint(userData)    
     if userData['age'] == 'Medieval':
         nextAge = 'Enlightment'
     elif userData['age'] == 'Enlightment':
@@ -246,7 +249,7 @@ def upgradeAge(userID):
     elif userData['age'] == 'Space':
         nextAge = ''
     if nextAge == '':
-        return False
+        return [False, nextAge]
     ageCosts = {
         'Enlightment': 50000,
         'Modern': 200000,
@@ -257,4 +260,4 @@ def upgradeAge(userID):
         updateResources(userID, knowledgeCost)
         updateNation(userID, {'age': nextAge})        
         return [True, nextAge]
-    return False
+    return [False, nextAge]
