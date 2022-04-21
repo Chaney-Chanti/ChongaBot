@@ -61,14 +61,13 @@ async def on_message(message):
         else:
              await message.channel.send('Incorrect parameters. Format: ' + prefix + 'stats or ' + prefix + 'stats [user]')
         data = utils.getUserStats(user)
-        # pprint.pprint(data) #Doesn't work with dict attribute .write
-        
         await message.channel.send( #Figure out a way to make this horizontal than like a column (paging)
             '```=======' + str(data['name']) + '=======\n'
             'Owner: ' + str(data['username']) + '\n' 
             'Age: ' + str(data['age']) + '\n'
             'Ability: ' + str(data['ability']) + '\n'
             'BattleRating: ' + str(data['battleRating']) + '\n'
+            'Shield: ' + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data['shield']['epoch'] + 86400))) + '\n'
             '======Resources======\n'
             'Food: ' + str(data['resources']['food']) + '\n'
             'Timber: ' + str(data['resources']['timber']) + '\n'
@@ -103,7 +102,6 @@ async def on_message(message):
         if timePassed >= 48:
             timePassed = 48
         if (timePassed > 0):
-            # multiply rates for each one . . . 
             food = data['resources']['foodrate'] * timePassed + data['resources']['food']
             timber = data['resources']['timberrate'] * timePassed + data['resources']['timber']
             metal = data['resources']['metalrate'] * timePassed + data['resources']['metal']
@@ -140,7 +138,6 @@ async def on_message(message):
             if unit != 'userID' and unit != 'username' and unit != 'name' and data[unit] != 0:
                 armyStr += unit + ': ' + str(data[unit]) + '\n'
         await message.channel.send(armyStr)
-        # pprint.pprint(data) #Doesn't work with dict attribute .write
 
     elif message.content.startswith(prefix + 'shop'):
         if len(msgContent) > 3:
@@ -186,7 +183,6 @@ async def on_message(message):
             unit = msgContent[1].lower()
             numUnits = msgContent[2]
 
-            #I want pop culture references
             medievalList = ['citizen', 'lancer', 'archer', 'calvalry', 'trebuchet']
             enlightmentList = ['citizen', 'minutemen', 'general', 'cannon']
             modernList = ['citizen', 'infantry', 'tank', 'fighter', 'bomber', 'icbm']
@@ -250,10 +246,9 @@ async def on_message(message):
             await message.channel.send('You cannot attack yourself!')
         elif not utils.checkBattleRatingRange(userID, message.mentions[0].id):
             await message.channel.send('Player rating too either to high or below you(+-300)')
-        # elif not utils.canAttack(message.mentions[0].id, time.time()):
-        #     await message.channel.send('This player has a shield, you can\'t attack them.')
+        elif not utils.canAttack(message.mentions[0].id, time.time()):
+            await message.channel.send('This player has a shield, you can\'t attack them.')
         else:
-            # print('DEBUG:', message.mentions[0].id )
             attackerID = userID
             defenderID = message.mentions[0].id 
             data = utils.attackSequence(attackerID, defenderID)
@@ -265,7 +260,7 @@ async def on_message(message):
                 'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
                 'Defender Casualties: ' + data['defenderCasualties'] + '\n'
             )
-    elif message.content.startswith(prefix + 'help'): #Don't know how to make prefixs not conflict with other bots
+    elif message.content.startswith(prefix + 'help'):
         await message.channel.send(
             '```========RULES========\n'
             'Create your own nation and attack other players.\n' 

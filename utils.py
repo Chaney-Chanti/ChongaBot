@@ -4,11 +4,10 @@ import json
 import pymongo
 import os
 import random
-import itertools
+import time
 import pprint
 from purgo_malum import client
 from dotenv import load_dotenv
-
 from objects import nation
 
 load_dotenv()
@@ -32,7 +31,7 @@ def playerExists(userID):
     return db.Nations.count_documents({'_id': userID}) > 0
 
 def canAttack(defenderID, currTime):
-    return list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['shield']['epoch'] + 86400 > currTime
+    return list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['shield']['epoch'] + 86400 < currTime
     
 """GET DATA FUNCTIONS"""
 def getUserStats(userID):
@@ -127,9 +126,13 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
         attackerUnitCount = attackerArmy[attackerArmyKeyList[i]] #reults to a string index
         defenderUnitCount = defenderArmy[defenderArmyKeyList[j]] #reults to a string index
         if attackerUnitCount == 0:
-                i += 1
+            i += 1
+            winner = [defenderID, defenderCasualties, defenderArmy]
+            loser = [attackerID, attackerCasualties, attackerArmy]
         elif defenderUnitCount == 0:
-                j += 1
+            j += 1
+            winner = [attackerID, attackerCasualties, attackerArmy]
+            loser = [defenderID, defenderCasualties, defenderArmy]
         else:
             attackerRoll = random.randint(unitDiceRolls[attackerArmyKeyList[i]]['lowerBound'], unitDiceRolls[attackerArmyKeyList[i]]['upperBound'])
             defenderRoll = random.randint(unitDiceRolls[defenderArmyKeyList[j]]['lowerBound'], unitDiceRolls[defenderArmyKeyList[j]]['upperBound'])
@@ -149,29 +152,39 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
                 attackerArmy[attackerArmyKeyList[i]] -= 1
                 winner = [defenderID, defenderCasualties, defenderArmy]
                 loser = [attackerID, attackerCasualties, attackerArmy]
+
+    #Update users' battle rating
     loserData = list(db.Nations.find({'_id': loser[0]}, {'_id': 0}))[0]
     winnerData = list(db.Nations.find({'_id': winner[0]}, {'_id': 0}))[0]
+    db.Nations.update_one({'_id': winner[0]}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
     if loserData['battleRating'] - 25 >= 0:
         db.Nations.update_one({'_id': loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
+        loserRating = loserData['battleRating'] - 25
     if loserData['battleRating'] - 25 < 0:
         db.Nations.update_one({'_id': loser[0]}, {'$set': {'battleRating': 0}})
-   
-    winner[2].pop('userID', None)
-    winner[2].pop('username', None)
-    loser[2].pop('userID', None)
-    loser[2].pop('username', None)
+        loserRating = 0
+    #Update users Army from casualties
     attackerArmy.pop('userID', None)
-    pprint.pprint(winner[2])
-    pprint.pprint(loser[2])
-    print(type(winner[2]))
-    db.Army.update_one({'_id': winner[0]}, {'$set': winner[2]})
-    db.Army.update_one({'_id': loser[0]}, {'$set': loser[2]})
-    
+    db.Army.update_one({'userID': winner[0]}, {'$set': winner[2]})
+    db.Army.update_one({'userID': loser[0]}, {'$set': loser[2]})
+    db.Nation.update_one({'userID': loser[0]}, {'$set': {'shield': {'epoch': time.time()}}})    
+    #Add tribute (steal 20% of resources)
+    loserResources = list(db.Resources.find({'userID': loser[0]}, {'_id': 0}))[0]
+    winnerResources = list(db.Resources.find({'userID': winner[0]}, {'_id': 0}))[0]
+    resList = ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']
+    for resource in loserResources:
+        if resource in resList:
+            amount = loserResources[resource] * 0.2
+            winnerResources[resource] = loserResources[resource] + amount
+            loserResources[resource] = loserResources[resource] - amount
+    db.Resources.update_one({'userID': winner[0]}, {'$set': winnerResources})
+    db.Resources.update_one({'userID': loser[0]}, {'$set': loserResources})
+
     battleSummary = {
         'winner': winnerData['name'].upper(),
         'loser': loserData['name'].upper(),
         'winnerBattleRating': str(winnerData['battleRating'] + 25),
-        'loserBattleRating': str(loserData['battleRating'] - 25),
+        'loserBattleRating': str(loserRating),
         'attackerCasualties': str(attackerCasualties),
         'defenderCasualties': str(defenderCasualties),
     }
@@ -197,13 +210,13 @@ def validateExecuteBuy(userID, unit, numUnits):
         'battlecruiser': { 'metal': 30000, 'oil': 30000, 'wealth': 30000},
         'deathstar': { 'metal': 100000, 'oil': 100000, 'wealth': 100000},
     }
-    #calculates the the total cost for the unit you are buying
+    #Calculates the the total cost for the unit you are buying
     for resource in unitCosts[unit]:
         unitCosts[unit][resource] *= int(numUnits)
     totalCost = unitCosts[unit]
     newResourceBalance = {}
     print(totalCost)
-    # checks to see if you have enough resources
+    #Checks to see if you have enough resources
     for resource in totalCost:
         newResourceBalance[resource] = data[resource] - totalCost[resource]
         if data[resource] - totalCost[resource] < 0:
