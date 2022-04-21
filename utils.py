@@ -1,4 +1,5 @@
 
+from functools import WRAPPER_ASSIGNMENTS
 import json
 import pymongo
 import os
@@ -60,6 +61,15 @@ def getRankings(): #Must change to be only top 50
 def getAge(userID):
     return list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]['age']
 
+def getUnitsData():
+    pass
+
+def getBuildingsData():
+    pass
+
+def getAgeData():
+    pass
+
 """UPDATE DATA FUNCTIONS"""
 
 def updateResources(userID, resDict):
@@ -88,6 +98,8 @@ def updateNation(userID, data):
 def attackSequence(attackerID, defenderID): #problem  with different unit types fighting each other
     attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
     defenderArmy = list(db.Army.find({'userID': defenderID}, {'_id': 0}))[0]
+    attackerArmyKeyList = list(attackerArmy.keys())
+    defenderArmyKeyList = list(defenderArmy.keys())
     unitDiceRolls = {
         'lancer': { 'lowerBound': 1, 'upperBound': 5},
         'archer': { 'lowerBound': 1, 'upperBound': 15},
@@ -110,41 +122,51 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
     attackerCasualties = {}
     defenderCasualties = {}
     random.seed(a=None)
-    for unit in unitDiceRolls: #cycles through the same units 
-        print(unit, attackerArmy[unit], defenderArmy[unit]) 
-        if attackerArmy[unit] == 0 or defenderArmy[unit] == 0: #one person can have no units left
-            pass
+    i = j = 3
+    while i < len(attackerArmyKeyList) and j < len(defenderArmyKeyList):      
+        attackerUnitCount = attackerArmy[attackerArmyKeyList[i]] #reults to a string index
+        defenderUnitCount = defenderArmy[defenderArmyKeyList[j]] #reults to a string index
+        if attackerUnitCount == 0:
+                i += 1
+        elif defenderUnitCount == 0:
+                j += 1
         else:
-            while attackerArmy[unit] > 0 and defenderArmy[unit] > 0:
-                # print('UNNNNITTTT:', unit)
-                attackerRoll = random.randint(unitDiceRolls[unit]['lowerBound'], unitDiceRolls[unit]['upperBound'])
-                defenderRoll = random.randint(unitDiceRolls[unit]['lowerBound'], unitDiceRolls[unit]['upperBound'])
-                # print(attackerRoll, defenderRoll)
-                if attackerRoll > defenderRoll:
-                    if unit in defenderCasualties:
-                        defenderCasualties[unit] += 1 # I want to avoid setting the values to 0 in the dict and just write to it
-                    else: defenderCasualties[unit] = 1
-                    defenderArmy[unit] -= 1
-                    winnerID = attackerID
-                    loserID = defenderID
-                elif attackerRoll < defenderRoll:
-                    if unit in attackerCasualties:
-                        attackerCasualties[unit] += 1 # I want to avoid setting the values to 0 in the dict and just write to it
-                    else: 
-                        attackerCasualties[unit] = 1
-                    attackerArmy[unit] -= 1
-                    winnerID = defenderID
-                    loserID = attackerID
-
-    loserData = list(db.Nations.find({'_id': loserID}, {'_id': 0}))[0]
-    winnerData = list(db.Nations.find({'_id': winnerID}, {'_id': 0}))[0]
+            attackerRoll = random.randint(unitDiceRolls[attackerArmyKeyList[i]]['lowerBound'], unitDiceRolls[attackerArmyKeyList[i]]['upperBound'])
+            defenderRoll = random.randint(unitDiceRolls[defenderArmyKeyList[j]]['lowerBound'], unitDiceRolls[defenderArmyKeyList[j]]['upperBound'])
+            if attackerRoll > defenderRoll:
+                if defenderArmyKeyList[j] in defenderCasualties:
+                    defenderCasualties[defenderArmyKeyList[j]] += 1 # I want to avoid setting the values to 0 in the dict and just write to it
+                else: 
+                    defenderCasualties[defenderArmyKeyList[j]] = 1
+                defenderArmy[defenderArmyKeyList[j]] -= 1
+                winner = [attackerID, attackerCasualties, attackerArmy]
+                loser = [defenderID, defenderCasualties, defenderArmy]
+            elif attackerRoll < defenderRoll:
+                if attackerArmyKeyList[i] in attackerCasualties:
+                    attackerCasualties[attackerArmyKeyList[i]] += 1 # I want to avoid setting the values to 0 in the dict and just write to it
+                else: 
+                    attackerCasualties[attackerArmyKeyList[i]] = 1
+                attackerArmy[attackerArmyKeyList[i]] -= 1
+                winner = [defenderID, defenderCasualties, defenderArmy]
+                loser = [attackerID, attackerCasualties, attackerArmy]
+    loserData = list(db.Nations.find({'_id': loser[0]}, {'_id': 0}))[0]
+    winnerData = list(db.Nations.find({'_id': winner[0]}, {'_id': 0}))[0]
     if loserData['battleRating'] - 25 >= 0:
-        db.Nations.update_one({'_id': loserID}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
+        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25}})
     if loserData['battleRating'] - 25 < 0:
-        db.Nations.update_one({'_id': loserID}, {'$set': {'battleRating': 0}})
-    db.Nations.update_one({'_id': winnerID}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
-    #implement resource taking
-    #implement taking of army
+        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battleRating': 0}})
+   
+    winner[2].pop('userID', None)
+    winner[2].pop('username', None)
+    loser[2].pop('userID', None)
+    loser[2].pop('username', None)
+    attackerArmy.pop('userID', None)
+    pprint.pprint(winner[2])
+    pprint.pprint(loser[2])
+    print(type(winner[2]))
+    db.Army.update_one({'_id': winner[0]}, {'$set': winner[2]})
+    db.Army.update_one({'_id': loser[0]}, {'$set': loser[2]})
+    
     battleSummary = {
         'winner': winnerData['name'].upper(),
         'loser': loserData['name'].upper(),
