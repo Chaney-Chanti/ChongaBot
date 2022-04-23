@@ -10,11 +10,11 @@ class createNation:
         self.battleRating = 0    
         self.lastRoll = 0
         self.ownedAbiltiies = []
+        self.shield = 0
         self.matchHistory = {
             'attacker': '',
             'summary': '',
         }
-
         self.granary = { 
             'numBuildings': 0,
             'built': False,
@@ -39,7 +39,3 @@ class createNation:
             'numBuildings': 0,
             'built': False
         } 
-        self.shield = {
-            'isOn': False,
-            'epoch': epoch
-        }

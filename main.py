@@ -26,12 +26,13 @@ async def on_message(message):
     prefix = 'c!'
     if message.author == client.user:
         return
+    #Text processing
+    message.content = message.content.lower()
     msgContent = message.content.split(' ')
     userID = message.author.id
     serverID = message.guild.id
     username = str(message.author)
-    print('DEBUG:', msgContent)
-    # await message.channel.send(message.author.id)
+    # print('DEBUG:', msgContent)
 
     if message.content.startswith(prefix +'createnation'): 
         if len(msgContent) != 2:
@@ -67,7 +68,7 @@ async def on_message(message):
             'Age: ' + str(data['age']) + '\n'
             'Ability: ' + str(data['ability']) + '\n'
             'BattleRating: ' + str(data['battleRating']) + '\n'
-            'Shield: ' + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data['shield']['epoch'] + 86400))) + '\n'
+            'Shield (When this person can be attacked): ' + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data['shield']+ 86400))) + '\n'
             '======Resources======\n'
             'Food: ' + str(data['resources']['food']) + '\n'
             'Timber: ' + str(data['resources']['timber']) + '\n'
@@ -144,20 +145,30 @@ async def on_message(message):
             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'shop [unit] [number]')
         elif len(msgContent) == 1 and 'shop' in msgContent[0]:
             age = utils.getAge(userID)
+            unitCosts = utils.getUnitsCosts()
+            unitRolls = utils.getUnitDiceRolls()
+
             if age == 'Medieval':
                 await message.channel.send(
                     '```===Units You Can Buy=== \n'
-                    'Lancers - cost: 50 food, 50 timber | Roll: 1-5\n'
-                    'Archers - cost: 100 food, 100 timber | Roll: 1-15\n'
-                    'Calvalry - cost: 200 food, 200 timber | Roll 1-20\n'
-                    'Trebuchet - cost: 300 food, 300 timber |  Roll 1-50\n```'
+                    'Lancers - cost: ' + str(unitCosts['lancer']['food']) + ' food, ' + str(unitCosts['lancer']['timber']) 
+                    + ' timber | Roll: ' + str(unitRolls['lancer']['lowerBound']) + '-' + str(unitRolls['lancer']['upperBound']) + '\n'
+                    'Archers - cost: ' + str(unitCosts['archer']['food']) + ' food, ' + str(unitCosts['archer']['timber']) 
+                    + ' timber | Roll: ' + str(unitRolls['archer']['lowerBound']) + '-' + str(unitRolls['archer']['upperBound']) + '\n'
+                    'Calvalry - cost: ' + str(unitCosts['calvalry']['food']) + ' food, ' + str(unitCosts['calvalry']['timber']) 
+                    + ' timber | Roll: ' + str(unitRolls['calvalry']['lowerBound']) + '-' + str(unitRolls['calvalry']['upperBound']) + '\n'
+                    'Trebuchets - cost: ' + str(unitCosts['trebuchet']['food']) + ' food, ' + str(unitCosts['trebuchet']['timber']) 
+                    + ' timber | Roll: ' + str(unitRolls['trebuchet']['lowerBound']) + '-' + str(unitRolls['trebuchet']['upperBound']) + '\n```'
                 )
             if age == 'Enlightment':
                  await message.channel.send(
-                    '```===Units You Can Buy=== \n'
-                    'minutemen - cost: 50 food, 50 timber |  Roll 1-30\n'
-                    'general - cost: 50 food, 50 timber | Roll: 1-50\n'
-                    'cannon - cost: 50 food, 50 timber |  Roll 1-50\n```'
+                      '```===Units You Can Buy=== \n'
+                    'Minutemen - cost: ' + str(unitCosts['minutemen']['food']) + ' food, ' + str(unitCosts['minutemen']['metal']) 
+                    + ' metal | Roll: ' + str(unitRolls['minutemen']['lowerBound']) + '-' + str(unitRolls['minutemen']['upperBound']) + '\n'
+                    'Generals - cost: ' + str(unitCosts['general']['food']) + ' food, ' + str(unitCosts['general']['metal']) 
+                    + ' metal, ' + str(unitCosts['general']['wealth']) + 'wealth | Roll: ' + str(unitRolls['general']['lowerBound']) + '-' + str(unitRolls['general']['upperBound']) + '\n'
+                    'Trebuchet - cost: ' + str(unitCosts['trebuchet']['food']) + ' food, ' + str(unitCosts['trebuchet']['timber']) 
+                    + ' timber | Roll: ' + str(unitRolls['trebuchet']['lowerBound']) + '-' + str(unitRolls['trebuchet']['upperBound']) + '\n```'
                 )
             if age == 'Modern':
                  await message.channel.send(
@@ -213,14 +224,15 @@ async def on_message(message):
     elif message.content.startswith(prefix + 'build'):
         buildings = ['granary', 'lumbermill', 'quarry', 'oilrig', 'market', 'university']
         if len(msgContent) == 1:
+            buildingCosts = utils.getBuildingsCosts()
             await message.channel.send(
                 '```=====Buildings=====\n'
-                'Granary - cost: 1000 timber, 1000 metal\n'
-                'Lumbermill - cost:  3000 timber, 3000 metal\n'
-                'Quarry - cost:  3000 timber, 3000 metal\n'
-                'Oil Rig - cost: 5000 metal, 5000 wealth\n'
-                'Market - cost:  1000 food, 1000 timber, 1000 wealth \n'
-                'University - cost:  1500 timber, 1500 metal, 1500 wealth \n```'
+                'Granary - cost: ' + str(buildingCosts['granary']['timber']) + ' timber, ' + str(buildingCosts['granary']['metal']) + ' metal\n'
+                'Lumbermill - cost: ' + str(buildingCosts['lumbermill']['timber']) + ' timber, ' + str(buildingCosts['lumbermill']['metal']) + ' metal\n'
+                'Quarry - cost: ' + str(buildingCosts['quarry']['timber']) + ' timber, ' + str(buildingCosts['quarry']['metal']) + ' metal\n'
+                'Oil Rig - cost: ' + str(buildingCosts['oilrig']['metal']) + ' metal, ' + str(buildingCosts['oilrig']['wealth']) + ' wealth\n'
+                'Market - cost: ' + str(buildingCosts['market']['food']) + ' food, ' + str(buildingCosts['market']['timber']) + ' timber, ' + str(buildingCosts['market']['wealth']) + ' wealth \n'
+                'University - cost: ' + str(buildingCosts['university']['timber']) + ' timber, ' + str(buildingCosts['university']['metal']) + ' metal, ' + str(buildingCosts['university']['wealth']) + ' wealth \n```'
             )
         elif len(msgContent) == 2 and msgContent[1] in buildings:
             if utils.buyBuilding(userID, msgContent[1].lower()):
@@ -256,6 +268,7 @@ async def on_message(message):
                 '=====BATTLE SUMMARY=====\n' +
                 data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
                 data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
+                data['winner'] + ' Plundered ' + data['tribute'] + '\n' +
                 data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
                 'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
                 'Defender Casualties: ' + data['defenderCasualties'] + '\n'
