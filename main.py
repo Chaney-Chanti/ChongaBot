@@ -33,7 +33,7 @@ async def on_message(message):
     userID = message.author.id
     serverID = message.guild.id
     username = str(message.author)
-    # print('DEBUG:', msgContent)
+    print('DEBUG:', msgContent)
 
     if message.content.startswith(prefix +'createnation'): 
         if len(msgContent) != 2:
@@ -271,15 +271,23 @@ async def on_message(message):
                 '```Here Is A List of Players You Can Attack:\n' +
                 str(players) + '```'
             )
-        elif len(msgContent) > 2 or len(message.mentions) == 0:
+        elif len(msgContent) > 2:
             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'attack [player]')
-        elif not utils.playerExists(message.mentions[0].id):
+        
+        if len(message.mentions) > 0:
+            defenderID = message.mentions[0].id
+            if message.author.id == defenderID:
+                await message.channel.send('You cannot attack yourself!')
+        elif '#' in msgContent[1]:
+            defenderID = msgContent[1]
+            if message.author == message.content[1]:
+                await message.channel.send('You cannot attack yourself!')
+
+        if not utils.playerExists(defenderID):
             await message.channel.send('This player does not exist')
-        elif message.author.id == message.mentions[0].id:
-            await message.channel.send('You cannot attack yourself!')
-        elif not utils.checkBattleRatingRange(userID, message.mentions[0].id):
+        elif not utils.checkBattleRatingRange(userID, defenderID):
             await message.channel.send('Player rating too either to high or below you(+-300)')
-        elif utils.hasShield(message.mentions[0].id, time.time()):
+        elif utils.hasShield(defenderID, time.time()):
             await message.channel.send('This player has a shield, you can\'t attack them.')
         elif True:
             armyData = utils.getUserArmy(userID)
@@ -292,6 +300,7 @@ async def on_message(message):
             if hasArmy == False:
                 await message.channel.send('Stop the cap you have no army...')
             else:
+                print('lol')
                 attackerID = userID
                 if len(message.mentions[0].id):
                     defenderID = message.mentions[0].id 

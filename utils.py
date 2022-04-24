@@ -22,25 +22,36 @@ def checkCreation(userID, name):
     return db.Nations.count_documents({'_id': userID}) > 0 or badWordFilter(name)
 
 def checkBattleRatingRange(attackerID, defenderID):
+    idFilter = '_id'
+    if '#' in str(defenderID):
+        idFilter = 'username'
     playerOneRating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battleRating'])
-    playerTwoRating = json.dumps(list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['battleRating'])
+    playerTwoRating = json.dumps(list(db.Nations.find({idFilter: defenderID}, {idFilter: 0}))[0]['battleRating'])
     return abs(int(playerOneRating) - int(playerTwoRating)) <= 200 
 
 def playerExists(userID):
-    return db.Nations.count_documents({'_id': userID}) > 0
+    idFilter = '_id'
+    if '#' in str(userID):
+        idFilter = 'username'
+    return db.Nations.count_documents({idFilter: userID}) > 0
 
 def hasShield(defenderID, currTime):
-    return list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['shield'] + 86400 > currTime
+    idFilter = '_id'
+    if '#' in str(defenderID):
+        idFilter = 'username'
+    return list(db.Nations.find({idFilter: defenderID}, {idFilter: 0}))[0]['shield'] + 86400 > currTime
 
 """GET DATA FUNCTIONS"""
 def getUserStats(userID):
-    print('DEBUG:', userID)
+    idFilter = '_id'
+    if '#' in str(userID):
+        idFilter = 'username'
     return list(db.Nations.aggregate([
-        {'$match': {'_id': userID}},
+        {'$match': {idFilter: userID}},
         {
             '$lookup': {
                 'from': 'Resources',
-                'localField': '_id',
+                'localField': idFilter,
                 'foreignField': 'userID',
                 'as': 'resources',
             }
@@ -171,6 +182,9 @@ def updateNation(userID, data):
 
 """GAME SERVICE FUNCTIONS """
 def attackSequence(attackerID, defenderID): #problem  with different unit types fighting each other
+    if '#' in defenderID:
+        print('# found') 
+        print(defenderID)
     attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
     defenderArmy = list(db.Army.find({'userID': defenderID}, {'_id': 0}))[0]
     attackerArmyKeyList = list(attackerArmy.keys())
