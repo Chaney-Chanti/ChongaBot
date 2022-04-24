@@ -1,3 +1,4 @@
+from attr import has
 from dotenv import load_dotenv
 import nextcord
 import os
@@ -133,12 +134,21 @@ async def on_message(message):
             user = message.author.id
         else:
             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'army or ' + prefix + 'army [user]')
-        data = utils.getUserArmy(user)
-        armyStr = ''
-        for unit in data:
-            if unit != 'userID' and unit != 'username' and unit != 'name' and data[unit] != 0:
-                armyStr += unit + ': ' + str(data[unit]) + '\n'
-        await message.channel.send(armyStr)
+        armyData = utils.getUserArmy(userID)
+        units = utils.getUnits()
+        hasArmy = False
+        for unit in armyData:
+            if unit in units and armyData[unit] > 0 :
+                hasArmy = True
+                break
+        if hasArmy == False:
+            await message.channel.send('Sadge, you have no army...')
+        else:
+            armyStr = ''
+            for unit in armyData:
+                if unit != 'userID' and unit != 'username' and unit != 'name' and armyData[unit] != 0:
+                    armyStr += unit + ': ' + str(armyData[unit]) + '\n'
+            await message.channel.send(armyStr)
 
     elif message.content.startswith(prefix + 'shop'):
         if len(msgContent) > 3:
@@ -241,6 +251,11 @@ async def on_message(message):
                 await message.channel.send('Bruh Moment... (not enough resources)')
         else:
             await message.channel.send('This building does not exist.')
+    elif message.content.startswith(prefix + 'ages'):
+        ageCosts = utils.getAgeCosts()
+        await message.channel.send(
+            '```Ages (Costs in Knowledge):\n ' + str(ageCosts) + '```'
+        )
     elif message.content.startswith(prefix + 'nextage'):
         result = utils.upgradeAge(userID)
         print(result)
@@ -250,7 +265,13 @@ async def on_message(message):
             await message.channel.send('You got no M\'s in ur bank account (not enough resources) or you\'re just maxed out.')
 
     elif message.content.startswith(prefix + 'attack'):
-        if len(msgContent) != 2 or len(message.mentions) == 0:
+        if len(msgContent) == 1:
+            players = utils.getVictims(userID)    
+            await message.channel.send(
+                '```Here Is A List of Players You Can Attack:\n' +
+                str(players) + '```'
+            )
+        elif len(msgContent) > 2 or len(message.mentions) == 0:
             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'attack [player]')
         elif not utils.playerExists(message.mentions[0].id):
             await message.channel.send('This player does not exist')
@@ -258,21 +279,34 @@ async def on_message(message):
             await message.channel.send('You cannot attack yourself!')
         elif not utils.checkBattleRatingRange(userID, message.mentions[0].id):
             await message.channel.send('Player rating too either to high or below you(+-300)')
-        elif not utils.canAttack(message.mentions[0].id, time.time()):
+        elif utils.hasShield(message.mentions[0].id, time.time()):
             await message.channel.send('This player has a shield, you can\'t attack them.')
-        else:
-            attackerID = userID
-            defenderID = message.mentions[0].id 
-            data = utils.attackSequence(attackerID, defenderID)
-            await message.channel.send(
-                '=====BATTLE SUMMARY=====\n' +
-                data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
-                data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
-                data['winner'] + ' Plundered ' + data['tribute'] + '\n' +
-                data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
-                'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
-                'Defender Casualties: ' + data['defenderCasualties'] + '\n'
-            )
+        elif True:
+            armyData = utils.getUserArmy(userID)
+            units = utils.getUnits()
+            hasArmy = False
+            for unit in armyData:
+                if unit in units and armyData[unit] > 0 :
+                    hasArmy = True
+                    break
+            if hasArmy == False:
+                await message.channel.send('Stop the cap you have no army...')
+            else:
+                attackerID = userID
+                if len(message.mentions[0].id):
+                    defenderID = message.mentions[0].id 
+                else:
+                    defenderID = msgContent[1]
+                data = utils.attackSequence(attackerID, defenderID)
+                await message.channel.send(
+                    '=====BATTLE SUMMARY=====\n' +
+                    data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
+                    data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
+                    data['winner'] + ' Plundered ' + str(data['tribute']) + '\n' +
+                    data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
+                    'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
+                    'Defender Casualties: ' + data['defenderCasualties'] + '\n'
+                )
     elif message.content.startswith(prefix + 'help'):
         await message.channel.send(
             '```========RULES========\n'
@@ -287,8 +321,8 @@ async def on_message(message):
             prefix + 'stats - Info on your nation\n' +
             prefix + 'leaderboard - View the rankings of everyone who plays\n' + 
             prefix + 'claim - Collect resources (every hour)\n' +
-            prefix + 'nextage - Go to the next age!\n' +
             prefix + 'ages - Info on ages\n' +
+            prefix + 'nextage - Go to the next age!\n' +
             prefix + 'shop - Info on units you can purchase\n' + 
             prefix + 'shop [units] [number] - Buys n number of units\n' + 
             prefix + 'build - Info on buildings you can build\n' + 

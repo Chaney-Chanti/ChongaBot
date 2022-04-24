@@ -24,14 +24,14 @@ def checkCreation(userID, name):
 def checkBattleRatingRange(attackerID, defenderID):
     playerOneRating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battleRating'])
     playerTwoRating = json.dumps(list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['battleRating'])
-    return abs(int(playerOneRating) - int(playerTwoRating)) <= 300 
+    return abs(int(playerOneRating) - int(playerTwoRating)) <= 200 
 
 def playerExists(userID):
     return db.Nations.count_documents({'_id': userID}) > 0
 
-def canAttack(defenderID, currTime):
-    return list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['shield'] + 86400 <= currTime
-    
+def hasShield(defenderID, currTime):
+    return list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['shield'] + 86400 > currTime
+
 """GET DATA FUNCTIONS"""
 def getUserStats(userID):
     print('DEBUG:', userID)
@@ -50,6 +50,12 @@ def getUserStats(userID):
         },
     ]))[0]
 
+def getUnits():
+    return ['lancer', 'archer', 'calvalry', 'trebuchet', 
+    'minutement', 'general', 'cannon', 
+    'infantry', 'tank', 'fighter', 'bomber', 'icbm',
+    'shocktrooper', 'starfighter', 'lasercannon', 'battlecruiser', 'deathstar']
+
 def getUserArmy(userID):
     return list(db.Army.find({'userID': userID}, {'_id': 0}))[0]
 
@@ -59,6 +65,24 @@ def getRankings(): #Must change to be only top 50
 def getAge(userID):
     return list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]['age']
 
+def getVictims(userID):
+    userBR = list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]['battleRating']
+    upperRange = userBR + 200
+    lowerRange = userBR - 200
+    #Might need refactor for a lot of players
+    playerList = list(db.Nations.find().sort('battleRating', -1).limit(10))
+    attackablePlayers = []
+    attackablePlayersSmall = []
+    for player in playerList:
+        if player['battleRating'] in range(lowerRange, upperRange):
+            if not player['_id'] == userID:
+                attackablePlayers.append(player['username'])
+    if len(attackablePlayers) > 10:
+        for i in range(0,10):
+            rand = random.sample(range(len(attackablePlayers)), 10)
+            attackablePlayersSmall.append(attackablePlayers[rand])
+        return attackablePlayersSmall
+    return attackablePlayers
 def getUnitsCosts():
     unitCosts = { 
         'lancer': { 'food': 50, 'timber': 50, },
@@ -205,13 +229,15 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
     loserResources = list(db.Resources.find({'userID': loser[0]}, {'_id': 0}))[0]
     winnerResources = list(db.Resources.find({'userID': winner[0]}, {'_id': 0}))[0]
     resList = ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']
+    totalBonusLoot = {}
     for resource in loserResources:
         if resource in resList:
             amount = math.ceil(loserResources[resource] * 0.2)
             winnerResources[resource] = loserResources[resource] + amount
             loserResources[resource] = loserResources[resource] - amount
-    bonusLoot = amount * 5
-    winnerResources[resource] = loserResources[resource] + bonusLoot
+            bonusLoot = amount * 5
+            totalBonusLoot[resource] = bonusLoot
+            winnerResources[resource] += bonusLoot
     db.Resources.update_one({'userID': winner[0]}, {'$set': winnerResources})
     db.Resources.update_one({'userID': loser[0]}, {'$set': loserResources})
 
@@ -219,7 +245,7 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
         'winner': winnerData['name'].upper(),
         'loser': loserData['name'].upper(),
         'winnerBattleRating': str(winnerData['battleRating'] + 25),
-        'tribute': str(amount + bonusLoot),
+        'tribute': totalBonusLoot,
         'loserBattleRating': str(loserRating),
         'attackerCasualties': str(attackerCasualties),
         'defenderCasualties': str(defenderCasualties),
@@ -239,7 +265,7 @@ def validateExecuteBuy(userID, unit, numUnits):
     for resource in totalCost:
         newResourceBalance[resource] = data[resource] - totalCost[resource]
         if data[resource] - totalCost[resource] < 0:
-            print(data[resource] - totalCost[resource])
+            # print(data[resource] - totalCost[resource])
             return [False]
     return [True, newResourceBalance]
 
@@ -254,9 +280,7 @@ def buyBuilding(userID, building):
     if age == 'Space':
         rateIncrease = 400
     resData = list(db.Resources.find({'userID': userID}, {'_id': 0}))[0]
-    pprint.pprint(resData)
     nationData = list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]
-    pprint.pprint(nationData)
 
     buildingCosts = getBuildingsCosts()
     cost = buildingCosts[building]
@@ -267,23 +291,23 @@ def buyBuilding(userID, building):
             updateResources(userID, resData)
             nationData[building]['numBuildings'] += 1
             nationData[building]['built'] = True
-            if building == 'granary': 
-                resData['foodrate'] += rateIncrease
-            if building == 'lumbermill': 
-                resData['timberrate'] += rateIncrease
-            if building == 'quarry': 
-                resData['metalrate'] += rateIncrease
-            if building == 'oilrig': 
-                resData['oilrate'] += rateIncrease
-            if building == 'market': 
-                resData['wealthrate'] += rateIncrease
-            if building == 'university': 
-                resData['knowledgerate'] += rateIncrease
-            updateBuilding(userID, building, nationData)
-            updateResourceRate(userID, resData)
-            return True
         else:
             return False
+    if building == 'granary': 
+        resData['foodrate'] += rateIncrease
+    if building == 'lumbermill': 
+        resData['timberrate'] += rateIncrease
+    if building == 'quarry': 
+        resData['metalrate'] += rateIncrease
+    if building == 'oilrig': 
+        resData['oilrate'] += rateIncrease
+    if building == 'market': 
+        resData['wealthrate'] += rateIncrease
+    if building == 'university': 
+        resData['knowledgerate'] += rateIncrease
+    updateBuilding(userID, building, nationData)
+    updateResourceRate(userID, resData)
+    return True
 
 def upgradeAge(userID):
     userData = getUserStats(userID)
