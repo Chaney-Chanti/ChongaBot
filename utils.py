@@ -182,11 +182,11 @@ def updateNation(userID, data):
 
 """GAME SERVICE FUNCTIONS """
 def attackSequence(attackerID, defenderID): #problem  with different unit types fighting each other
-    if '#' in defenderID:
-        print('# found') 
-        print(defenderID)
-    attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
-    defenderArmy = list(db.Army.find({'userID': defenderID}, {'_id': 0}))[0]
+    userFilter = 'userID'
+    if '#' in str(defenderID):
+        userFilter = 'username'
+    attackerArmy = list(db.Army.find({userFilter: attackerID}, {'_id': 0}))[0]
+    defenderArmy = list(db.Army.find({userFilter: defenderID}, {'_id': 0}))[0]
     attackerArmyKeyList = list(attackerArmy.keys())
     defenderArmyKeyList = list(defenderArmy.keys())
     unitDiceRolls = getUnitDiceRolls()
@@ -236,12 +236,12 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
         db.Nations.update_one({'_id': loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time()}})
         loserRating = 0
     #Update users Army from casualties
-    attackerArmy.pop('userID', None)
-    db.Army.update_one({'userID': winner[0]}, {'$set': winner[2]})
-    db.Army.update_one({'userID': loser[0]}, {'$set': loser[2]})
+    attackerArmy.pop(userFilter, None)
+    db.Army.update_one({userFilter: winner[0]}, {'$set': winner[2]})
+    db.Army.update_one({userFilter: loser[0]}, {'$set': loser[2]})
     #Add tribute (steal 20% of resources)
-    loserResources = list(db.Resources.find({'userID': loser[0]}, {'_id': 0}))[0]
-    winnerResources = list(db.Resources.find({'userID': winner[0]}, {'_id': 0}))[0]
+    loserResources = list(db.Resources.find({userFilter: loser[0]}, {'_id': 0}))[0]
+    winnerResources = list(db.Resources.find({userFilter: winner[0]}, {'_id': 0}))[0]
     resList = ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']
     totalBonusLoot = {}
     for resource in loserResources:
@@ -252,8 +252,8 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
             bonusLoot = amount * 5
             totalBonusLoot[resource] = bonusLoot
             winnerResources[resource] += bonusLoot
-    db.Resources.update_one({'userID': winner[0]}, {'$set': winnerResources})
-    db.Resources.update_one({'userID': loser[0]}, {'$set': loserResources})
+    db.Resources.update_one({userFilter: winner[0]}, {'$set': winnerResources})
+    db.Resources.update_one({userFilter: loser[0]}, {'$set': loserResources})
 
     battleSummary = {
         'winner': winnerData['name'].upper(),

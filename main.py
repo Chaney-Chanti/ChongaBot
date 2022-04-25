@@ -302,7 +302,7 @@ async def on_message(message):
             else:
                 print('lol')
                 attackerID = userID
-                if len(message.mentions[0].id):
+                if len(message.mentions[0]):
                     defenderID = message.mentions[0].id 
                 else:
                     defenderID = msgContent[1]
