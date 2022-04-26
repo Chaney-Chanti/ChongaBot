@@ -33,6 +33,7 @@ def playerExists(userID):
     idFilter = '_id'
     if '#' in str(userID):
         idFilter = 'username'
+    print(idFilter, userID)
     return db.Nations.count_documents({idFilter: userID}) > 0
 
 def hasShield(defenderID, currTime):
@@ -185,7 +186,7 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
     userFilter = 'userID'
     if '#' in str(defenderID):
         userFilter = 'username'
-    attackerArmy = list(db.Army.find({userFilter: attackerID}, {'_id': 0}))[0]
+    attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
     defenderArmy = list(db.Army.find({userFilter: defenderID}, {'_id': 0}))[0]
     attackerArmyKeyList = list(attackerArmy.keys())
     defenderArmyKeyList = list(defenderArmy.keys())
@@ -226,22 +227,39 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
                 loser = [attackerID, attackerCasualties, attackerArmy]
 
     #Update users' battle rating
-    loserData = list(db.Nations.find({'_id': loser[0]}, {'_id': 0}))[0]
-    winnerData = list(db.Nations.find({'_id': winner[0]}, {'_id': 0}))[0]
-    db.Nations.update_one({'_id': winner[0]}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
+    loserData = list(db.Nations.find({userFilter: loser[0]}))
+    if len(loserData) == 0:
+        loserData = list(db.Nations.find({'_id': loser[0]}))[0]
+        loserSearch = '_id'
+        loserResSearch = 'userID'
+    else:
+        loserData = loserData[0]
+        loserSearch = 'username'
+        loserResSearch = 'username'
+    winnerData = list(db.Nations.find({userFilter: winner[0]}))
+    if len(winnerData) == 0:
+        winnerData = list(db.Nations.find({'_id': winner[0]}))[0]
+        winnerSearch = '_id'
+        winnnerResSearch = 'userID'
+    else:
+        winnerData = winnerData[0]
+        winnerSearch = 'username'
+        winnnerResSearch = 'username'
+    db.Nations.update_one({winnerSearch: winner[0]}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
     if loserData['battleRating'] - 25 >= 0:
-        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25, 'shield': time.time()}})
+        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25, 'shield': time.time()}})
         loserRating = loserData['battleRating'] - 25
     if loserData['battleRating'] - 25 < 0:
-        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time()}})
+        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time()}})
         loserRating = 0
     #Update users Army from casualties
     attackerArmy.pop(userFilter, None)
-    db.Army.update_one({userFilter: winner[0]}, {'$set': winner[2]})
-    db.Army.update_one({userFilter: loser[0]}, {'$set': loser[2]})
-    #Add tribute (steal 20% of resources)
-    loserResources = list(db.Resources.find({userFilter: loser[0]}, {'_id': 0}))[0]
-    winnerResources = list(db.Resources.find({userFilter: winner[0]}, {'_id': 0}))[0]
+    db.Army.update_one({winnerSearch: winner[0]}, {'$set': winner[2]})
+    db.Army.update_one({loserSearch: loser[0]}, {'$set': loser[2]})
+    #Add tribute (steal 20% of resources + 3x bonus loot)
+    print(loserSearch, loser[0], winnerSearch, winner[0])
+    loserResources = list(db.Resources.find({loserResSearch: loser[0]}))[0]
+    winnerResources = list(db.Resources.find({winnnerResSearch: winner[0]}))[0]
     resList = ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']
     totalBonusLoot = {}
     for resource in loserResources:
@@ -249,11 +267,11 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
             amount = math.ceil(loserResources[resource] * 0.2)
             winnerResources[resource] = loserResources[resource] + amount
             loserResources[resource] = loserResources[resource] - amount
-            bonusLoot = amount * 5
+            bonusLoot = amount * 3
             totalBonusLoot[resource] = bonusLoot
             winnerResources[resource] += bonusLoot
-    db.Resources.update_one({userFilter: winner[0]}, {'$set': winnerResources})
-    db.Resources.update_one({userFilter: loser[0]}, {'$set': loserResources})
+    db.Resources.update_one({winnnerResSearch: winner[0]}, {'$set': winnerResources})
+    db.Resources.update_one({loserResSearch: loser[0]}, {'$set': loserResources})
 
     battleSummary = {
         'winner': winnerData['name'].upper(),

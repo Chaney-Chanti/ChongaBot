@@ -28,15 +28,15 @@ async def on_message(message):
     if message.author == client.user:
         return
     #Text processing
-    message.content = message.content.lower()
+    # message.content[ = message.content.lower()
     msgContent = message.content.split(' ')
     userID = message.author.id
     serverID = message.guild.id
     username = str(message.author)
-    print('DEBUG:', msgContent)
+    print('DEBUG:', msgContent, 'LENGTH:', len(msgContent))
 
     if message.content.startswith(prefix +'createnation'): 
-        if len(msgContent) != 2:
+        if len(msgContent) != 3:
             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'createnation [name]')
         if len(msgContent[1]) > 20:
             await message.channel.send('Nation Name is too long!')
@@ -258,7 +258,6 @@ async def on_message(message):
         )
     elif message.content.startswith(prefix + 'nextage'):
         result = utils.upgradeAge(userID)
-        print(result)
         if result[0]:
             await message.channel.send('Successfully advanced to the ' + result[1] + ' age!')
         else:
@@ -271,51 +270,49 @@ async def on_message(message):
                 '```Here Is A List of Players You Can Attack:\n' +
                 str(players) + '```'
             )
-        elif len(msgContent) > 2:
-            await message.channel.send('Incorrect parameters. Format: ' + prefix + 'attack [player]')
-        
-        if len(message.mentions) > 0:
-            defenderID = message.mentions[0].id
-            if message.author.id == defenderID:
-                await message.channel.send('You cannot attack yourself!')
-        elif '#' in msgContent[1]:
-            defenderID = msgContent[1]
-            if message.author == message.content[1]:
-                await message.channel.send('You cannot attack yourself!')
+        else:
+            if len(msgContent) > 3:
+                await message.channel.send('Incorrect parameters. Format: ' + prefix + 'attack [player]')
+            elif '#' in msgContent[1]:
+                defenderID = msgContent[1]
+                if message.author == message.content[1]:
+                    await message.channel.send('You cannot attack yourself!')
+            elif len(message.mentions) > 0:
+                defenderID = message.mentions[0].id
+                if message.author.id == defenderID:
+                    await message.channel.send('You cannot attack yourself!')
+            elif '#' in msgContent[2]: #hacky way to allow for one space discord usernames
+                defenderID = msgContent[1] + ' ' + msgContent[2]
+                if defenderID == message.content[1]:
+                    await message.channel.send('You cannot attack yourself!')
 
-        if not utils.playerExists(defenderID):
-            await message.channel.send('This player does not exist')
-        elif not utils.checkBattleRatingRange(userID, defenderID):
-            await message.channel.send('Player rating too either to high or below you(+-300)')
-        elif utils.hasShield(defenderID, time.time()):
-            await message.channel.send('This player has a shield, you can\'t attack them.')
-        elif True:
-            armyData = utils.getUserArmy(userID)
-            units = utils.getUnits()
-            hasArmy = False
-            for unit in armyData:
-                if unit in units and armyData[unit] > 0 :
-                    hasArmy = True
-                    break
-            if hasArmy == False:
-                await message.channel.send('Stop the cap you have no army...')
-            else:
-                print('lol')
-                attackerID = userID
-                if len(message.mentions[0]):
-                    defenderID = message.mentions[0].id 
+            if not utils.playerExists(defenderID):
+                await message.channel.send('This player does not exist')
+            elif not utils.checkBattleRatingRange(userID, defenderID):
+                await message.channel.send('Player rating too either to high or below you(+-300)')
+            elif utils.hasShield(defenderID, time.time()):
+                await message.channel.send('This player has a shield, you can\'t attack them.')
+            elif True:
+                armyData = utils.getUserArmy(userID)
+                units = utils.getUnits()
+                hasArmy = False
+                for unit in armyData:
+                    if unit in units and armyData[unit] > 0 :
+                        hasArmy = True
+                        break
+                if hasArmy == False:
+                    await message.channel.send('Stop the cap you have no army...')
                 else:
-                    defenderID = msgContent[1]
-                data = utils.attackSequence(attackerID, defenderID)
-                await message.channel.send(
-                    '=====BATTLE SUMMARY=====\n' +
-                    data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
-                    data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
-                    data['winner'] + ' Plundered ' + str(data['tribute']) + '\n' +
-                    data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
-                    'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
-                    'Defender Casualties: ' + data['defenderCasualties'] + '\n'
-                )
+                    data = utils.attackSequence(userID, defenderID)
+                    await message.channel.send(
+                        '=====BATTLE SUMMARY=====\n' +
+                        data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
+                        data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
+                        data['winner'] + ' Plundered ' + str(data['tribute']) + '\n' +
+                        data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
+                        'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
+                        'Defender Casualties: ' + data['defenderCasualties'] + '\n'
+                    )
     elif message.content.startswith(prefix + 'help'):
         await message.channel.send(
             '```========RULES========\n'
