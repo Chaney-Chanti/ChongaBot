@@ -244,9 +244,12 @@ async def on_message(message):
                 'Market - cost: ' + str(buildingCosts['market']['food']) + ' food, ' + str(buildingCosts['market']['timber']) + ' timber, ' + str(buildingCosts['market']['wealth']) + ' wealth \n'
                 'University - cost: ' + str(buildingCosts['university']['timber']) + ' timber, ' + str(buildingCosts['university']['metal']) + ' metal, ' + str(buildingCosts['university']['wealth']) + ' wealth \n```'
             )
-        elif len(msgContent) == 2 and msgContent[1] in buildings:
-            if utils.buyBuilding(userID, msgContent[1].lower()):
-                await message.channel.send('Successfully built ' + msgContent[1])
+        elif len(msgContent) == 2:
+            await message.channel.send(await message.channel.send('Incorrect parameters. Format: ' + prefix + 'build [building] [number]'))
+        elif len(msgContent) == 3 and msgContent[1] in buildings:
+            numBuild = msgContent[2]
+            if utils.buyBuilding(userID, msgContent[1].lower(), numBuild):
+                await message.channel.send('Successfully built ' + numBuild + ' ' + msgContent[1] + '(s)')
             else:
                 await message.channel.send('Bruh Moment... (not enough resources)')
         else:

@@ -87,7 +87,7 @@ def getVictims(userID):
     attackablePlayersSmall = []
     for player in playerList:
         if player['battleRating'] in range(lowerRange, upperRange):
-            if not player['_id'] == userID:
+            if not player['_id'] == userID and player['shield'] > time.time(): #Exclude self player
                 attackablePlayers.append(player['username'])
     if len(attackablePlayers) > 10:
         for i in range(0,10):
@@ -166,7 +166,6 @@ def updateResources(userID, resDict):
 def updateResourceRate(userID, resDict):
     db.Resources.update_one({'userID': userID}, {'$set': resDict})
     return
-
 
 def updateUnits(userID, unit, numUnits):
     data = list(db.Army.find({'userID': userID}, {'_id': 0}))[0]
@@ -301,7 +300,8 @@ def validateExecuteBuy(userID, unit, numUnits):
             return [False]
     return [True, newResourceBalance]
 
-def buyBuilding(userID, building):
+def buyBuilding(userID, building, numBuild):
+    numBuild = int(numBuild)
     age = getAge(userID)
     if age == 'Medieval':
         rateIncrease = 100
@@ -318,25 +318,25 @@ def buyBuilding(userID, building):
     cost = buildingCosts[building]
     
     for resource in cost:
-        if resData[resource] - cost[resource] >= 0:
-            resData[resource] -= cost[resource]
+        if resData[resource] - cost[resource] * numBuild >= 0:
+            resData[resource] -= cost[resource] * numBuild
             updateResources(userID, resData)
-            nationData[building]['numBuildings'] += 1
-            nationData[building]['built'] = True
         else:
             return False
+    nationData[building]['built'] = True
+    nationData[building]['numBuildings'] += numBuild
     if building == 'granary': 
-        resData['foodrate'] += rateIncrease
+        resData['foodrate'] += rateIncrease * numBuild
     if building == 'lumbermill': 
-        resData['timberrate'] += rateIncrease
+        resData['timberrate'] += rateIncrease * numBuild
     if building == 'quarry': 
-        resData['metalrate'] += rateIncrease
+        resData['metalrate'] += rateIncrease * numBuild
     if building == 'oilrig': 
-        resData['oilrate'] += rateIncrease
+        resData['oilrate'] += rateIncrease * numBuild
     if building == 'market': 
-        resData['wealthrate'] += rateIncrease
+        resData['wealthrate'] += rateIncrease * numBuild
     if building == 'university': 
-        resData['knowledgerate'] += rateIncrease
+        resData['knowledgerate'] += rateIncrease * numBuild
     updateBuilding(userID, building, nationData)
     updateResourceRate(userID, resData)
     return True
