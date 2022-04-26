@@ -161,13 +161,13 @@ async def on_message(message):
             if age == 'Medieval':
                 await message.channel.send(
                     '```===Units You Can Buy=== \n'
-                    'Lancers - cost: ' + str(unitCosts['lancer']['food']) + ' food, ' + str(unitCosts['lancer']['timber']) 
+                    'Lancer - cost: ' + str(unitCosts['lancer']['food']) + ' food, ' + str(unitCosts['lancer']['timber']) 
                     + ' timber | Roll: ' + str(unitRolls['lancer']['lowerBound']) + '-' + str(unitRolls['lancer']['upperBound']) + '\n'
-                    'Archers - cost: ' + str(unitCosts['archer']['food']) + ' food, ' + str(unitCosts['archer']['timber']) 
+                    'Archer - cost: ' + str(unitCosts['archer']['food']) + ' food, ' + str(unitCosts['archer']['timber']) 
                     + ' timber | Roll: ' + str(unitRolls['archer']['lowerBound']) + '-' + str(unitRolls['archer']['upperBound']) + '\n'
                     'Calvalry - cost: ' + str(unitCosts['calvalry']['food']) + ' food, ' + str(unitCosts['calvalry']['timber']) 
                     + ' timber | Roll: ' + str(unitRolls['calvalry']['lowerBound']) + '-' + str(unitRolls['calvalry']['upperBound']) + '\n'
-                    'Trebuchets - cost: ' + str(unitCosts['trebuchet']['food']) + ' food, ' + str(unitCosts['trebuchet']['timber']) 
+                    'Trebuchet - cost: ' + str(unitCosts['trebuchet']['food']) + ' food, ' + str(unitCosts['trebuchet']['timber']) 
                     + ' timber | Roll: ' + str(unitRolls['trebuchet']['lowerBound']) + '-' + str(unitRolls['trebuchet']['upperBound']) + '\n```'
                 )
             if age == 'Enlightment':
@@ -175,28 +175,38 @@ async def on_message(message):
                       '```===Units You Can Buy=== \n'
                     'Minutemen - cost: ' + str(unitCosts['minutemen']['food']) + ' food, ' + str(unitCosts['minutemen']['metal']) 
                     + ' metal | Roll: ' + str(unitRolls['minutemen']['lowerBound']) + '-' + str(unitRolls['minutemen']['upperBound']) + '\n'
-                    'Generals - cost: ' + str(unitCosts['general']['food']) + ' food, ' + str(unitCosts['general']['metal']) 
-                    + ' metal, ' + str(unitCosts['general']['wealth']) + 'wealth | Roll: ' + str(unitRolls['general']['lowerBound']) + '-' + str(unitRolls['general']['upperBound']) + '\n'
+                    'General - cost: ' + str(unitCosts['general']['food']) + ' food, ' + str(unitCosts['general']['metal']) 
+                    + ' metal, ' + str(unitCosts['general']['wealth']) + ' wealth | Roll: ' + str(unitRolls['general']['lowerBound']) + '-' + str(unitRolls['general']['upperBound']) + '\n'
                     'Trebuchet - cost: ' + str(unitCosts['trebuchet']['food']) + ' food, ' + str(unitCosts['trebuchet']['timber']) 
                     + ' timber | Roll: ' + str(unitRolls['trebuchet']['lowerBound']) + '-' + str(unitRolls['trebuchet']['upperBound']) + '\n```'
                 )
             if age == 'Modern':
                  await message.channel.send(
                     '```===Units You Can Buy=== \n'
-                    'infantry - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'tank- cost: 50 food, 50 timber | Roll: 5-10\n'
-                    'fighter - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'bomber - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'icbm - cost: 50 food, 50 timber |  Roll 3-5\n```'
+                    'Infantry - cost: ' + str(unitCosts['infantry']['food']) + ' food, ' + str(unitCosts['infantry']['metal']) 
+                    + ' metal ' + str(unitCosts['infantry']['wealth']) + ' wealth | Roll: ' + str(unitRolls['infantry']['lowerBound']) + '-' + str(unitRolls['infantry']['upperBound']) + '\n'
+                    'Tank - cost: ' + str(unitCosts['tank']['metal']) + ' metal, ' + str(unitCosts['tank']['oil']) 
+                    + ' oil, ' + str(unitCosts['tank']['wealth']) + ' wealth | Roll: ' + str(unitRolls['tank']['lowerBound']) + '-' + str(unitRolls['tank']['upperBound']) + '\n'
+                    'Fighter - cost: ' + str(unitCosts['fighter']['metal']) + ' metal, ' + str(unitCosts['fighter']['oil']) 
+                    + ' oil, ' + str(unitCosts['fighter']['wealth']) + ' wealth | Roll: ' + str(unitRolls['fighter']['lowerBound']) + '-' + str(unitRolls['fighter']['upperBound']) + '\n'
+                    'Bomber - cost: ' + str(unitCosts['bomber']['metal']) + ' metal, ' + str(unitCosts['bomber']['oil']) 
+                    + ' oil, ' + str(unitCosts['bomber']['wealth']) + ' wealth | Roll: ' + str(unitRolls['bomber']['lowerBound']) + '-' + str(unitRolls['bomber']['upperBound']) + '\n'
+                    'ICBM - cost: ' + str(unitCosts['icbm']['metal']) + ' metal, ' + str(unitCosts['icbm']['oil']) 
+                    + ' oil, ' + str(unitCosts['icbm']['wealth']) + ' wealth | Roll: ' + str(unitRolls['icbm']['lowerBound']) + '-' + str(unitRolls['icbm']['upperBound']) + '\n```'
                 )
             if age == 'Space':
                  await message.channel.send(
-                    '```===Units You Can Buy=== \n'
-                    'shocktrooper - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'starfighter - cost: 50 food, 50 timber | Roll: 5-10\n'
-                    'lasercannon - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'battlecruiser - cost: 50 food, 50 timber |  Roll 3-5\n'
-                    'deathstar - cost: 50 food, 50 timber |  Roll 3-5\n```'
+                   '```===Units You Can Buy=== \n'
+                    'Shocktrooper - cost: ' + str(unitCosts['shocktrooper']['metal']) + ' metal, ' + str(unitCosts['shocktrooper']['oil']) 
+                    + ' oil ' + str(unitCosts['shocktrooper']['wealth']) + ' wealth | Roll: ' + str(unitRolls['shocktrooper']['lowerBound']) + '-' + str(unitRolls['shocktrooper']['upperBound']) + '\n'
+                    'Lasercannon - cost: ' + str(unitCosts['lasercannon']['metal']) + ' metal, ' + str(unitCosts['lasercannon']['oil']) 
+                    + ' oil, ' + str(unitCosts['lasercannon']['wealth']) + ' wealth | Roll: ' + str(unitRolls['lasercannon']['lowerBound']) + '-' + str(unitRolls['lasercannon']['upperBound']) + '\n'
+                    'Starfighter - cost: ' + str(unitCosts['starfighter']['metal']) + ' metal, ' + str(unitCosts['starfighter']['oil']) 
+                    + ' oil, ' + str(unitCosts['starfighter']['wealth']) + ' wealth | Roll: ' + str(unitRolls['starfighter']['lowerBound']) + '-' + str(unitRolls['starfighter']['upperBound']) + '\n'
+                    'Battlecruiser - cost: ' + str(unitCosts['battlecruiser']['metal']) + ' metal, ' + str(unitCosts['battlecruiser']['oil']) 
+                    + ' oil, ' + str(unitCosts['battlecruiser']['wealth']) + ' wealth | Roll: ' + str(unitRolls['battlecruiser']['lowerBound']) + '-' + str(unitRolls['battlecruiser']['upperBound']) + '\n'
+                    'Deathstar - cost: ' + str(unitCosts['deathstar']['metal']) + ' metal, ' + str(unitCosts['deathstar']['oil']) 
+                    + ' oil, ' + str(unitCosts['deathstar']['wealth']) + ' wealth | Roll: ' + str(unitRolls['deathstar']['lowerBound']) + '-' + str(unitRolls['icbm']['upperBound']) + '\n```'
                 )
         elif not msgContent[2].isnumeric():
             await message.channel.send('You must specify a number of units to buy')

@@ -86,8 +86,9 @@ def getVictims(userID):
     attackablePlayers = []
     attackablePlayersSmall = []
     for player in playerList:
-        if player['battleRating'] in range(lowerRange, upperRange):
-            if not player['_id'] == userID and player['shield'] > time.time(): #Exclude self player
+        print(int(player['shield']) < time.time())
+        if player['battleRating'] in range(lowerRange, upperRange) and int(player['shield']) < time.time():
+            if not player['_id'] == userID: #Exclude self player
                 attackablePlayers.append(player['username'])
     if len(attackablePlayers) > 10:
         for i in range(0,10):
@@ -107,8 +108,9 @@ def getUnitsCosts():
         'infantry': { 'food': 300, 'metal': 300, 'wealth': 300},
         'tank': { 'metal': 1000, 'oil': 1000, 'wealth': 1000},
         'fighter': { 'metal': 2000, 'oil': 2000, 'wealth': 2000},
+        'bomber': { 'metal': 3000, 'oil': 3000, 'wealth': 3000},
         'icbm': { 'metal': 10000, 'oil': 10000, 'wealth': 10000},
-        'shocktrooper': { 'metal': 2000, 'oil': 500, 'metal': 2000},
+        'shocktrooper': { 'metal': 2000, 'oil': 500, 'wealth': 2000},
         'lasercannon': { 'metal': 15000, 'oil': 15000, 'wealth': 15000},
         'starfighter': { 'metal': 25000, 'oil': 20000, 'wealth': 20000},
         'battlecruiser': { 'metal': 30000, 'oil': 30000, 'wealth': 30000},
@@ -146,12 +148,12 @@ def getUnitDiceRolls():
         'cannon': { 'lowerBound': 1, 'upperBound': 80},
         'infantry': { 'lowerBound': 1, 'upperBound': 100},
         'tank': { 'lowerBound': 1, 'upperBound': 1000},
-        'fighter': { 'lowerBound': 1, 'upperBound': 5000},
+        'fighter': { 'lowerBound': 1, 'upperBound': 10000},
         'bomber': { 'lowerBound': 1, 'upperBound': 30000},
         'icbm': { 'lowerBound': 1, 'upperBound': 100000},
-        'shocktrooper': { 'lowerBound': 1, 'upperBound': 1000},
-        'lasercannon': { 'lowerBound': 1, 'upperBound': 10000},
-        'starfighter': { 'lowerBound': 1, 'upperBound': 50000},
+        'shocktrooper': { 'lowerBound': 1, 'upperBound': 10000},
+        'lasercannon': { 'lowerBound': 1, 'upperBound': 100000},
+        'starfighter': { 'lowerBound': 1, 'upperBound': 500000},
         'battlecruiser': { 'lowerBound': 1, 'upperBound': 700000}, 
         'deathstar': { 'lowerBound': 1, 'upperBound': 10000000},
     }
@@ -246,10 +248,10 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
         winnnerResSearch = 'username'
     db.Nations.update_one({winnerSearch: winner[0]}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
     if loserData['battleRating'] - 25 >= 0:
-        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25, 'shield': time.time()}})
+        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25, 'shield': time.time() + 86400}})
         loserRating = loserData['battleRating'] - 25
     if loserData['battleRating'] - 25 < 0:
-        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time()}})
+        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time() + 86400}})
         loserRating = 0
     #Update users Army from casualties
     attackerArmy.pop(userFilter, None)
