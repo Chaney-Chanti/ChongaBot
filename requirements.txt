@@ -26,7 +26,6 @@ charset-normalizer==2.0.12
 click==8.0.3
 click-default-group==1.2.2
 colorama==0.4.3
-command-not-found==0.3
 coverage==6.3.1
 cryptography==2.8
 cupshelpers==1.0
