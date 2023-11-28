@@ -1,4 +1,3 @@
-from attr import has
 from dotenv import load_dotenv
 import nextcord
 import os
@@ -8,6 +7,7 @@ import pymongo
 import objects.nation, objects.resources, objects.army
 import time
 import pprint
+import string
 
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
@@ -15,7 +15,9 @@ TOKEN = os.environ.get('DISCORDTOKEN')
 
 mongoClient = pymongo.MongoClient(CONNECTIONPASSWORD)
 db = mongoClient.ChongaBot
-client = nextcord.Client()
+intents = nextcord.Intents.default() #added this idk wtf this is
+intents.message_content = True #added this idk wtf this is
+client = nextcord.Client(intents=intents)
 
 @client.event
 async def on_ready():
@@ -28,15 +30,15 @@ async def on_message(message):
     if message.author == client.user:
         return
     #Text processing
-    # message.content[ = message.content.lower()
+    # message.content = message.content.lower()
     msgContent = message.content.split(' ')
     userID = message.author.id
     serverID = message.guild.id
     username = str(message.author)
-    print('DEBUG:', msgContent, 'LENGTH:', len(msgContent))
+    print('DEBUG:', msgContent, 'LENGTH:', len(msgContent), '\n', 'Author ID:', message.author.id, '\n', 'username', message.author)
 
     if message.content.startswith(prefix +'createnation'): 
-        if len(msgContent) != 3:
+        if len(msgContent) != 2:
             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'createnation [name]')
         if len(msgContent[1]) > 20:
             await message.channel.send('Nation Name is too long!')
@@ -125,30 +127,42 @@ async def on_message(message):
             await message.channel.send('You have already claimed within the hour. Please wait another hour.')
 
     elif message.content.startswith(prefix + 'army'):
-        if len(msgContent) == 2:
-            if utils.playerExists(message.mentions[0].id):
-                user = message.mentions[0].id
-            else:
-                await message.channel.send('This player does not exist')
-        elif len(msgContent) == 1:
-            user = message.author.id
-        else:
+        validation = True
+        if len(msgContent) >= 3:
+            validation = False
             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'army or ' + prefix + 'army [user]')
-        armyData = utils.getUserArmy(userID)
-        units = utils.getUnits()
-        hasArmy = False
-        for unit in armyData:
-            if unit in units and armyData[unit] > 0 :
-                hasArmy = True
-                break
-        if hasArmy == False:
-            await message.channel.send('Sadge, you have no army...')
-        else:
-            armyStr = ''
+        if len(msgContent) == 1:
+            userID = message.author.id
+        if len(msgContent) >= 2:
+            if len(message.mentions) >= 1:
+                userID = message.mentions[0].id
+                if not utils.playerExistsViaID(userID):
+                    validation = False
+                    await message.channel.send('This player does not exist')
+            else:
+                if utils.playerExistsViaUsername(msgContent[1]):
+                    userID = utils.getUserIDFromUsername(msgContent[1])
+                else:
+                    validation = False
+                    await message.channel.send('This player does not exist')
+        print('After all the checks, userID = ', userID)
+        if validation == True:
+            armyData = utils.getUserArmy(userID)
+            print(armyData)
+            units = utils.getUnits()
+            hasArmy = False
             for unit in armyData:
-                if unit != 'userID' and unit != 'username' and unit != 'name' and armyData[unit] != 0:
-                    armyStr += unit + ': ' + str(armyData[unit]) + '\n'
-            await message.channel.send(armyStr)
+                if unit in units and armyData[unit] > 0 :
+                    hasArmy = True
+                    break
+            if hasArmy == False:
+                await message.channel.send('Sadge, you have no army...')
+            else:
+                armyStr = ''
+                for unit in armyData:
+                    if unit != 'userID' and unit != 'username' and unit != 'name' and armyData[unit] != 0:
+                        armyStr += unit + ': ' + str(armyData[unit]) + '\n'
+                await message.channel.send(armyStr)
 
     elif message.content.startswith(prefix + 'shop'):
         if len(msgContent) > 3:
@@ -277,6 +291,8 @@ async def on_message(message):
             await message.channel.send('You got no M\'s in ur bank account (not enough resources) or you\'re just maxed out.')
 
     elif message.content.startswith(prefix + 'attack'):
+        # print('ATTACK COMMAND DEBUG:', msgContent, 'LENGTH:', len(msgContent), message)
+        # print('ATTACK COMMAND DEBUG:', message.content)
         if len(msgContent) == 1:
             players = utils.getVictims(userID)    
             await message.channel.send(
@@ -286,26 +302,19 @@ async def on_message(message):
         else:
             if len(msgContent) > 3:
                 await message.channel.send('Incorrect parameters. Format: ' + prefix + 'attack [player]')
-            elif '#' in msgContent[1]:
-                defenderID = msgContent[1]
-                if message.author == message.content[1]:
-                    await message.channel.send('You cannot attack yourself!')
-            elif len(message.mentions) > 0:
+            if len(message.mentions) > 0:
                 defenderID = message.mentions[0].id
-                if message.author.id == defenderID:
-                    await message.channel.send('You cannot attack yourself!')
-            elif '#' in msgContent[2]: #hacky way to allow for one space discord usernames
-                defenderID = msgContent[1] + ' ' + msgContent[2]
-                if defenderID == message.content[1]:
-                    await message.channel.send('You cannot attack yourself!')
-
+            else:
+                defenderID = utils.getUserIDFromUsername(msgContent[1])
+            if message.author == message.content[1]: #edge case for username
+                await message.channel.send('You cannot attack yourself!')
             if not utils.playerExists(defenderID):
                 await message.channel.send('This player does not exist')
-            elif not utils.checkBattleRatingRange(userID, defenderID):
-                await message.channel.send('Player rating too either to high or below you(+-300)')
-            elif utils.hasShield(defenderID, time.time()):
+            if not utils.checkBattleRatingRange(userID, defenderID):
+                await message.channel.send('Player rating too either to high or below you(+/-300)')
+            if utils.hasShield(defenderID, time.time()):
                 await message.channel.send('This player has a shield, you can\'t attack them.')
-            elif True:
+            else:
                 armyData = utils.getUserArmy(userID)
                 units = utils.getUnits()
                 hasArmy = False
@@ -318,23 +327,23 @@ async def on_message(message):
                 else:
                     data = utils.attackSequence(userID, defenderID)
                     await message.channel.send(
-                        '=====BATTLE SUMMARY=====\n' +
+                        '```=====BATTLE SUMMARY=====\n' +
                         data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
                         data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
                         data['winner'] + ' Plundered ' + str(data['tribute']) + '\n' +
                         data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
                         'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
-                        'Defender Casualties: ' + data['defenderCasualties'] + '\n'
+                        'Defender Casualties: ' + data['defenderCasualties'] + '```\n'
                     )
     elif message.content.startswith(prefix + 'help'):
         await message.channel.send(
             '```========RULES========\n'
             'Create your own nation and attack other players.\n' 
-            'Manage resources (Food, Timber, Metal, Oil, Wealth, Knowledge) to grow stronger.\n'
-            'Citizens mine all resources at a certain rate.\n' 
+            'Manage resources (Food, Timber, Metal, Oil, Wealth, Knowledge) and an army to grow stronger.\n'
+            'Buildings mine respective resource at a certain rate per hour.\n' 
             'Build/Upgrade buildings to increase resource rate.\n' 
             'Buy units and attack other players for resources and battle rating.\n' 
-            'You only get one nation for all servers.\n' 
+            'You only get one nation for all servers and you cannot change your nation after creation!\n' 
             '========Commands========\n' +
             prefix + 'createnation [name] - Create a nation\n' +
             prefix + 'stats - Info on your nation\n' +
@@ -345,9 +354,10 @@ async def on_message(message):
             prefix + 'shop - Info on units you can purchase\n' + 
             prefix + 'shop [units] [number] - Buys n number of units\n' + 
             prefix + 'build - Info on buildings you can build\n' + 
-            prefix + 'build [building] - Build this building\n' +
-            prefix + 'attack [player] - Attack a player (wins +25, losses -25)\n' + 
-            prefix + 'help [player] - List of commands and rules\n```'
+            prefix + 'build [building] [number]- Build this building\n' +
+            prefix + 'attack - Show a list of players you can attack\n' + 
+            prefix + 'attack [@player] - Attack a player (wins +25, losses -25)\n' + 
+            prefix + 'help - List of commands and rules\n```'
         )
         
 client.run(TOKEN)

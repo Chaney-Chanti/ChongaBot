@@ -22,19 +22,16 @@ def checkCreation(userID, name):
     return db.Nations.count_documents({'_id': userID}) > 0 or badWordFilter(name)
 
 def checkBattleRatingRange(attackerID, defenderID):
-    idFilter = '_id'
-    if '#' in str(defenderID):
-        idFilter = 'username'
+    print(attackerID, defenderID)
     playerOneRating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battleRating'])
-    playerTwoRating = json.dumps(list(db.Nations.find({idFilter: defenderID}, {idFilter: 0}))[0]['battleRating'])
+    playerTwoRating = json.dumps(list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['battleRating'])
     return abs(int(playerOneRating) - int(playerTwoRating)) <= 200 
 
-def playerExists(userID):
-    idFilter = '_id'
-    if '#' in str(userID):
-        idFilter = 'username'
-    print(idFilter, userID)
-    return db.Nations.count_documents({idFilter: userID}) > 0
+def playerExistsViaID(userID):
+    return db.Nations.count_documents({'_id': userID}) > 0
+
+def playerExistsViaUsername(username):
+    return db.Nations.count_documents({'username': username}) > 0
 
 def hasShield(defenderID, currTime):
     idFilter = '_id'
@@ -43,6 +40,9 @@ def hasShield(defenderID, currTime):
     return list(db.Nations.find({idFilter: defenderID}, {idFilter: 0}))[0]['shield'] + 86400 > currTime
 
 """GET DATA FUNCTIONS"""
+def getUserIDFromUsername(username):
+    return db.Nations.find({'username': username}, {'userID': 1})[0]['_id']
+
 def getUserStats(userID):
     idFilter = '_id'
     if '#' in str(userID):
@@ -96,7 +96,7 @@ def getVictims(userID):
             attackablePlayersSmall.append(attackablePlayers[rand])
         return attackablePlayersSmall
     return attackablePlayers
-def getUnitsCosts():
+def getUnitsCosts(): #im not sure how dynamic this is? can i just change as i please?
     unitCosts = { 
         'lancer': { 'food': 50, 'timber': 50, },
         'archer': { 'food': 100, 'timber': 100, },
@@ -160,7 +160,6 @@ def getUnitDiceRolls():
     return unitDiceRolls
 
 """UPDATE DATA FUNCTIONS"""
-
 def updateResources(userID, resDict):
     db.Resources.update_one({'userID': userID}, {'$set': resDict})
     return
@@ -184,11 +183,8 @@ def updateNation(userID, data):
 
 """GAME SERVICE FUNCTIONS """
 def attackSequence(attackerID, defenderID): #problem  with different unit types fighting each other
-    userFilter = 'userID'
-    if '#' in str(defenderID):
-        userFilter = 'username'
     attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
-    defenderArmy = list(db.Army.find({userFilter: defenderID}, {'_id': 0}))[0]
+    defenderArmy = list(db.Army.find({'userID': defenderID}, {'_id': 0}))[0]
     attackerArmyKeyList = list(attackerArmy.keys())
     defenderArmyKeyList = list(defenderArmy.keys())
     unitDiceRolls = getUnitDiceRolls()
@@ -228,7 +224,7 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
                 loser = [attackerID, attackerCasualties, attackerArmy]
 
     #Update users' battle rating
-    loserData = list(db.Nations.find({userFilter: loser[0]}))
+    loserData = list(db.Nations.find({'userID': loser[0]}))
     if len(loserData) == 0:
         loserData = list(db.Nations.find({'_id': loser[0]}))[0]
         loserSearch = '_id'
@@ -237,7 +233,7 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
         loserData = loserData[0]
         loserSearch = 'username'
         loserResSearch = 'username'
-    winnerData = list(db.Nations.find({userFilter: winner[0]}))
+    winnerData = list(db.Nations.find({'userID': winner[0]}))
     if len(winnerData) == 0:
         winnerData = list(db.Nations.find({'_id': winner[0]}))[0]
         winnerSearch = '_id'
@@ -248,17 +244,19 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
         winnnerResSearch = 'username'
     db.Nations.update_one({winnerSearch: winner[0]}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
     if loserData['battleRating'] - 25 >= 0:
-        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25, 'shield': time.time() + 86400}})
+        # db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25, 'shield': time.time() + 86400}})
         loserRating = loserData['battleRating'] - 25
     if loserData['battleRating'] - 25 < 0:
-        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time() + 86400}})
+        # db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time() + 86400}})
         loserRating = 0
     #Update users Army from casualties
-    attackerArmy.pop(userFilter, None)
-    db.Army.update_one({winnerSearch: winner[0]}, {'$set': winner[2]})
-    db.Army.update_one({loserSearch: loser[0]}, {'$set': loser[2]})
+    attackerArmy.pop('userID', None)
+    print('Winner:', winner[0], '\n', winner[1], '\n', winner[2])
+    print('Loser:', loser[0], '\n', loser[1], '\n',loser[2])
+    db.Army.update_one({'userID': winner[0]}, {'$set': winner[2]})
+    db.Army.update_one({'userID': loser[0]}, {'$set': loser[2]})
     #Add tribute (steal 20% of resources + 3x bonus loot)
-    print(loserSearch, loser[0], winnerSearch, winner[0])
+    # print(loserSearch, loser[0], winnerSearch, winner[0])
     loserResources = list(db.Resources.find({loserResSearch: loser[0]}))[0]
     winnerResources = list(db.Resources.find({winnnerResSearch: winner[0]}))[0]
     resList = ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']
