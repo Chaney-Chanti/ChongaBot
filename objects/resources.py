@@ -13,9 +13,9 @@ class createResources:
         self.oil = 100
         self.knowledge = 100
 
-        self.foodrate = 50
-        self.timberrate = 50
-        self.metalrate = 50
-        self.oilrate = 50
-        self.wealthrate = 50
-        self.knowledgerate = 50
+        self.foodrate = 100
+        self.timberrate = 100
+        self.metalrate = 100
+        self.oilrate = 100
+        self.wealthrate = 100
+        self.knowledgerate = 100
