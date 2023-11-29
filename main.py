@@ -56,7 +56,7 @@ async def on_message(message):
                 await message.channel.send('You either already have a nation or profanity was found in the creation...')
     elif message.content.startswith(prefix + 'stats'):
         if len(msgContent) == 2:
-            if utils.playerExists(message.mentions[0].id):
+            if utils.playerExistsViaID(message.mentions[0].id):
                 user = message.mentions[0].id
             else:
                 await message.channel.send('This player does not exist')
@@ -308,7 +308,7 @@ async def on_message(message):
                 defenderID = utils.getUserIDFromUsername(msgContent[1])
             if message.author == message.content[1]: #edge case for username
                 await message.channel.send('You cannot attack yourself!')
-            if not utils.playerExists(defenderID):
+            if not utils.playerExistsViaID(defenderID):
                 await message.channel.send('This player does not exist')
             if not utils.checkBattleRatingRange(userID, defenderID):
                 await message.channel.send('Player rating too either to high or below you(+/-300)')

@@ -244,10 +244,10 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
         winnnerResSearch = 'username'
     db.Nations.update_one({winnerSearch: winner[0]}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
     if loserData['battleRating'] - 25 >= 0:
-        # db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25, 'shield': time.time() + 86400}})
+        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25, 'shield': time.time() + 86400}})
         loserRating = loserData['battleRating'] - 25
     if loserData['battleRating'] - 25 < 0:
-        # db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time() + 86400}})
+        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time() + 86400}})
         loserRating = 0
     #Update users Army from casualties
     attackerArmy.pop('userID', None)
