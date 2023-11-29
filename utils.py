@@ -306,11 +306,11 @@ def buyBuilding(userID, building, numBuild):
     if age == 'Medieval':
         rateIncrease = 100
     elif age == 'Enlightment':
-        rateIncrease = 200    
+        rateIncrease = 500    
     if age == 'Modern':
-        rateIncrease = 300
+        rateIncrease = 1000
     if age == 'Space':
-        rateIncrease = 400
+        rateIncrease = 2000
     resData = list(db.Resources.find({'userID': userID}, {'_id': 0}))[0]
     nationData = list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]
 
