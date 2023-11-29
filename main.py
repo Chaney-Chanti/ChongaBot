@@ -56,10 +56,16 @@ async def on_message(message):
                 await message.channel.send('You either already have a nation or profanity was found in the creation...')
     elif message.content.startswith(prefix + 'stats'):
         if len(msgContent) == 2:
-            if utils.playerExistsViaID(message.mentions[0].id):
-                user = message.mentions[0].id
+            if len(message.mentions) > 0:
+                if utils.playerExistsViaID(message.mentions[0].id):
+                    user = message.mentions[0].id
+                else:
+                    await message.channel.send('This player does not exist')
             else:
-                await message.channel.send('This player does not exist')
+                if utils.playerExistsViaUsername(msgContent[1]):
+                    user = utils.getUserIDFromUsername(msgContent[1])
+                else:
+                    await message.channel.send('This player does not exist')
         elif len(msgContent) == 1:
             user = message.author.id
         else:
