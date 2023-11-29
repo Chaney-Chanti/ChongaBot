@@ -108,29 +108,30 @@ async def on_message(message):
         currentTime = time.time()
         data = utils.getUserStats(userID)
         timePassed = int(currentTime - data['resources']['lastClaim'])
-        timePassed = int(timePassed // 3600) # get total number of hours since last claim
-        if timePassed >= 48:
-            timePassed = 48
-        if (timePassed > 0):
-            food = data['resources']['foodrate'] * timePassed + data['resources']['food']
-            timber = data['resources']['timberrate'] * timePassed + data['resources']['timber']
-            metal = data['resources']['metalrate'] * timePassed + data['resources']['metal']
-            wealth = data['resources']['wealthrate'] * timePassed + data['resources']['wealth']
-            oil = data['resources']['oilrate'] * timePassed + data['resources']['oil']
-            knowledge = data['resources']['knowledgerate'] * timePassed + data['resources']['knowledge']
+        timePassedHrs = int(timePassed // 3600) # convert to get total number of hours since last claim
+        if timePassedHrs >= 48: #cap the resource collection to 2 days
+            timePassedHrs = 48
+        if (timePassedHrs > 0):
+            food = data['resources']['foodrate'] * timePassedHrs + data['resources']['food']
+            timber = data['resources']['timberrate'] * timePassedHrs + data['resources']['timber']
+            metal = data['resources']['metalrate'] * timePassedHrs + data['resources']['metal']
+            wealth = data['resources']['wealthrate'] * timePassedHrs + data['resources']['wealth']
+            oil = data['resources']['oilrate'] * timePassedHrs + data['resources']['oil']
+            knowledge = data['resources']['knowledgerate'] * timePassedHrs + data['resources']['knowledge']
 
             db.Resources.update_one({'userID': userID}, {'$set': {'lastClaim': currentTime, 'food': food, 'timber': timber, 'metal': metal, 'wealth': wealth, 'oil': oil, 'knowledge': knowledge}})
             await message.channel.send(
                 '```Resources Claimed:\n'
-                'Food: ' + str(data['resources']['foodrate'] * timePassed) + '\n'
-                'Timber: ' + str(data['resources']['timberrate'] * timePassed) + '\n'
-                'Metal: ' + str(data['resources']['metalrate'] * timePassed) + '\n'
-                'Wealth: ' + str(data['resources']['wealthrate'] * timePassed) + '\n'
-                'Oil: ' + str(data['resources']['oilrate'] * timePassed) + '\n'
-                'Knowledge: ' + str(data['resources']['knowledgerate'] * timePassed) + '\n```'
+                'Food: ' + str(data['resources']['foodrate'] * timePassedHrs) + '\n'
+                'Timber: ' + str(data['resources']['timberrate'] * timePassedHrs) + '\n'
+                'Metal: ' + str(data['resources']['metalrate'] * timePassedHrs) + '\n'
+                'Wealth: ' + str(data['resources']['wealthrate'] * timePassedHrs) + '\n'
+                'Oil: ' + str(data['resources']['oilrate'] * timePassedHrs) + '\n'
+                'Knowledge: ' + str(data['resources']['knowledgerate'] * timePassedHrs) + '\n```'
             )
         else:
-            await message.channel.send('You have already claimed within the hour. Please wait another hour.')
+            nextClaim =  data['resources']['lastClaim'] + 3600
+            await message.channel.send('You have already claimed within the hour. Please wait another hour.' + '\nNext Claim at: ' + str(time.strftime('%H:%M:%S', time.localtime(nextClaim))))
 
     elif message.content.startswith(prefix + 'army'):
         validation = True
