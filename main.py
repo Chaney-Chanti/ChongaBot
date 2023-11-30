@@ -71,6 +71,11 @@ async def on_message(message):
         else:
              await message.channel.send('Incorrect parameters. Format: ' + prefix + 'stats or ' + prefix + 'stats [user]')
         data = utils.getUserStats(user)
+        armyData = utils.getUserArmy(user)
+        armyStr = ''
+        for unit in armyData:
+            if unit != 'userID' and unit != 'username' and unit != 'name' and armyData[unit] != 0:
+                armyStr += unit + ': ' + str(armyData[unit]) + '\n'
         await message.channel.send( #Figure out a way to make this horizontal than like a column (paging)
             '```=======' + str(data['name']) + '=======\n'
             'Owner: ' + str(data['username']) + '\n' 
@@ -85,6 +90,8 @@ async def on_message(message):
             'Oil: ' + str(data['resources']['oil']) + '\n'
             'Wealth: ' + str(data['resources']['wealth']) + '\n'
             'Knowledge: ' + str(data['resources']['knowledge']) + '\n'
+            '======Army====== \n'
+            + armyStr +
             '======Buildings====== \n'
             'Granaries: ' + str(data['granary']['numBuildings']) + '\n'
             'Lumbermills: ' + str(data['lumbermill']['numBuildings']) + '\n'
@@ -153,10 +160,8 @@ async def on_message(message):
                 else:
                     validation = False
                     await message.channel.send('This player does not exist')
-        print('After all the checks, userID = ', userID)
         if validation == True:
             armyData = utils.getUserArmy(userID)
-            print(armyData)
             units = utils.getUnits()
             hasArmy = False
             for unit in armyData:
@@ -170,7 +175,7 @@ async def on_message(message):
                 for unit in armyData:
                     if unit != 'userID' and unit != 'username' and unit != 'name' and armyData[unit] != 0:
                         armyStr += unit + ': ' + str(armyData[unit]) + '\n'
-                await message.channel.send(armyStr)
+                await message.channel.send('```' + armyStr + '```')
 
     elif message.content.startswith(prefix + 'shop'):
         if len(msgContent) > 3:
