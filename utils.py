@@ -71,6 +71,13 @@ def getUserArmy(userID):
 def getRankings(): #Must change to be only top 50
     return list(db.Nations.find().sort('battleRating', -1).limit(10))
 
+def getUserRank(userID): #Must change to be only top 50
+    allPlayersSorted = list(db.Nations.find().sort('battleRating', -1))
+    numPlayers = db.Nations.count_documents({})
+    for i in range(len(allPlayersSorted)):
+        if allPlayersSorted[i]['_id'] == userID:
+            return i+1, numPlayers
+
 def getAge(userID):
     return list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]['age']
 

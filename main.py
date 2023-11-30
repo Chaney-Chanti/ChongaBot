@@ -94,6 +94,7 @@ async def on_message(message):
             'Universities: ' + str(data['university']['numBuildings']) + '\n```'
         )
     elif message.content.startswith(prefix + 'leaderboard'):
+        userRank, numPlayers = utils.getUserRank(message.author.id)
         nations = utils.getRankings()
         rankingString = ''
         rank = 1
@@ -102,7 +103,7 @@ async def on_message(message):
             rankingString = rankingString + '======\nRank #' + rank +'\nOwner: ' + nation['username'] + '\nNation: ' + nation['name'] + '\nBattle Rating: ' + str(nation['battleRating']) + '\n======'
             rank = int(rank)
             rank +=1
-        await message.channel.send('```' + rankingString + '```')
+        await message.channel.send('```' + 'Your Rank: ' + str(userRank) + '/' + str(numPlayers) + '\n' + rankingString + '```')
 
     elif message.content.startswith(prefix + 'claim'):
         currentTime = time.time()
