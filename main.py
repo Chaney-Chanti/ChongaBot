@@ -313,7 +313,7 @@ async def on_message(message):
                 defenderID = message.mentions[0].id
             else:
                 defenderID = utils.getUserIDFromUsername(msgContent[1])
-            if message.author == message.content[1]: #edge case for username
+            if message.author.id == defenderID: #edge case for username
                 await message.channel.send('You cannot attack yourself!')
             if not utils.playerExistsViaID(defenderID):
                 await message.channel.send('This player does not exist')
