@@ -34,10 +34,7 @@ def playerExistsViaUsername(username):
     return db.Nations.count_documents({'username': username}) > 0
 
 def hasShield(defenderID, currTime):
-    idFilter = '_id'
-    if '#' in str(defenderID):
-        idFilter = 'username'
-    return list(db.Nations.find({idFilter: defenderID}, {idFilter: 0}))[0]['shield'] + 86400 > currTime
+    return list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['shield'] >= currTime
 
 """GET DATA FUNCTIONS"""
 def getUserIDFromUsername(username):
@@ -86,7 +83,7 @@ def getVictims(userID):
     pprint.pprint(playerList)
     attackablePlayers = []
     for player in playerList:
-        if player['battleRating'] in range(lowerRange, upperRange) and int(player['shield']) <= time.time():
+        if player['battleRating'] in range(lowerRange, upperRange) and not hasShield(player['_id'], time.time()):
             if not player['_id'] == userID: #Exclude self player
                 attackablePlayers.append(player['username'])
     return attackablePlayers
@@ -218,7 +215,7 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
                 winner = [defenderID, defenderCasualties, defenderArmy]
                 loser = [attackerID, attackerCasualties, attackerArmy]
 
-    #Update users' battle rating
+    #Update users' battle rating and shields
     loserData = list(db.Nations.find({'userID': loser[0]}))
     if len(loserData) == 0:
         loserData = list(db.Nations.find({'_id': loser[0]}))[0]
@@ -246,24 +243,19 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
         loserRating = 0
     #Update users Army from casualties
     attackerArmy.pop('userID', None)
-    print('Winner:', winner[0], '\n', winner[1], '\n', winner[2])
-    print('Loser:', loser[0], '\n', loser[1], '\n',loser[2])
     db.Army.update_one({'userID': winner[0]}, {'$set': winner[2]})
     db.Army.update_one({'userID': loser[0]}, {'$set': loser[2]})
     #Add tribute (steal 20% of resources + 3x bonus loot)
-    # print(loserSearch, loser[0], winnerSearch, winner[0])
-    loserResources = list(db.Resources.find({loserResSearch: loser[0]}))[0]
-    winnerResources = list(db.Resources.find({winnnerResSearch: winner[0]}))[0]
-    resList = ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']
-    totalBonusLoot = {}
+    loserResources = list(db.Resources.find({'userID': loser[0]}))[0]
+    winnerResources = list(db.Resources.find({'userID': winner[0]}))[0]
+    resList = ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge'] #there are other fields aside from resources
+    totalBonusLoot = {} #used for summary
     for resource in loserResources:
         if resource in resList:
-            amount = math.ceil(loserResources[resource] * 0.2)
-            winnerResources[resource] = loserResources[resource] + amount
-            loserResources[resource] = loserResources[resource] - amount
-            bonusLoot = amount * 3
-            totalBonusLoot[resource] = bonusLoot
-            winnerResources[resource] += bonusLoot
+            amountTaken = math.ceil(loserResources[resource] * 0.2)
+            winnerResources[resource] = loserResources[resource] + (amountTaken * 3)
+            loserResources[resource] = loserResources[resource] - amountTaken
+            totalBonusLoot[resource] = (amountTaken * 3)
     db.Resources.update_one({winnnerResSearch: winner[0]}, {'$set': winnerResources})
     db.Resources.update_one({loserResSearch: loser[0]}, {'$set': loserResources})
 
@@ -271,6 +263,7 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
         'winner': winnerData['name'].upper(),
         'loser': loserData['name'].upper(),
         'winnerBattleRating': str(winnerData['battleRating'] + 25),
+        'loserBattleRating': str(winnerData['battleRating'] - 25),
         'tribute': totalBonusLoot,
         'loserBattleRating': str(loserRating),
         'attackerCasualties': str(attackerCasualties),

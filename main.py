@@ -77,7 +77,7 @@ async def on_message(message):
             'Age: ' + str(data['age']) + '\n'
             'Ability: ' + str(data['ability']) + '\n'
             'BattleRating: ' + str(data['battleRating']) + '\n'
-            'Shield (When this person can be attacked): ' + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data['shield']+ 86400))) + '\n'
+            'Shield (When this person can be attacked): ' + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(data['shield']))) + '\n'
             '======Resources======\n'
             'Food: ' + str(data['resources']['food']) + '\n'
             'Timber: ' + str(data['resources']['timber']) + '\n'
