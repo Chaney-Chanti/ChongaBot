@@ -82,20 +82,15 @@ def getVictims(userID):
     upperRange = userBR + 200
     lowerRange = userBR - 200
     #Might need refactor for a lot of players
-    playerList = list(db.Nations.find().sort('battleRating', -1).limit(10))
+    playerList = list(db.Nations.find().sort('battleRating', -1))
+    pprint.pprint(playerList)
     attackablePlayers = []
-    attackablePlayersSmall = []
     for player in playerList:
-        print(int(player['shield']) < time.time())
-        if player['battleRating'] in range(lowerRange, upperRange) and int(player['shield']) < time.time():
+        if player['battleRating'] in range(lowerRange, upperRange) and int(player['shield']) <= time.time():
             if not player['_id'] == userID: #Exclude self player
                 attackablePlayers.append(player['username'])
-    if len(attackablePlayers) > 10:
-        for i in range(0,10):
-            rand = random.sample(range(len(attackablePlayers)), 10)
-            attackablePlayersSmall.append(attackablePlayers[rand])
-        return attackablePlayersSmall
     return attackablePlayers
+
 def getUnitsCosts(): #im not sure how dynamic this is? can i just change as i please?
     unitCosts = { 
         'lancer': { 'food': 50, 'timber': 50, },
