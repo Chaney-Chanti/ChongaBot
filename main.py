@@ -23,7 +23,7 @@ client = nextcord.Client(intents=intents)
 async def on_ready():
     print(f'We have logged in as {client.user}')
     print('Currently in ' + str(len(client.guilds)) + ' servers!');
-    print('We have ' + str(utils.getNumUsers) + ' active players!');
+    print('We have ' + str(utils.getNumUsers()) + ' active players!');
 
 @client.event
 async def on_message(message):
@@ -349,6 +349,27 @@ async def on_message(message):
                         'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
                         'Defender Casualties: ' + data['defenderCasualties'] + '```\n'
                     )
+                    attacker = await client.fetch_user(userID)
+                    defender = await client.fetch_user(defenderID)
+                    await attacker.send(
+                        'YOU HAVE BEEN ATTACKED!\n'
+                        '```=====BATTLE SUMMARY=====\n' +
+                        data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
+                        data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
+                        data['winner'] + ' Plundered ' + str(data['tribute']) + '\n' +
+                        data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
+                        'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
+                        'Defender Casualties: ' + data['defenderCasualties'] + '```\n'
+                    )
+                    await defender.send(
+                          '```=====BATTLE SUMMARY=====\n' +
+                        data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
+                        data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
+                        data['winner'] + ' Plundered ' + str(data['tribute']) + '\n' +
+                        data['loser'] + ' Battle Rating: ' + data['loserBattleRating'] + ' (-25)\n' +
+                        'Attacker Casualties: ' + data['attackerCasualties'] + '\n' +
+                        'Defender Casualties: ' + data['defenderCasualties'] + '```\n'
+                    )
     elif message.content.startswith(prefix + 'help'):
         await message.channel.send(
             '```========RULES========\n'
@@ -373,5 +394,9 @@ async def on_message(message):
             prefix + 'attack [@player] - Attack a player (wins +25, losses -25)\n' + 
             prefix + 'help - List of commands and rules\n```'
         )
+
+        @client.command(name='test')
+        async def test(ctx):
+            await message.channel.send('testing')
         
 client.run(TOKEN)
