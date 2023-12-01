@@ -69,7 +69,7 @@ def getUserArmy(userID):
     return list(db.Army.find({'userID': userID}, {'_id': 0}))[0]
 
 def getRankings(): #Must change to be only top 50
-    return list(db.Nations.find().sort('battleRating', -1).limit(10))
+    return list(db.Nations.find().sort([('battleRating', -1), ('_id', -1)]).limit(10))
 
 def getUserRank(userID): #Must change to be only top 50
     allPlayersSorted = list(db.Nations.find().sort('battleRating', -1))
