@@ -1,4 +1,5 @@
 
+import nextcord
 import json
 import pymongo
 import os
@@ -8,6 +9,7 @@ import math
 import pprint
 from purgo_malum import client
 from dotenv import load_dotenv
+
 
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
@@ -158,6 +160,9 @@ def getUnitDiceRolls():
     }
     return unitDiceRolls
 
+def getNumUsers():
+    return db.Nations.count_documents({})
+
 """UPDATE DATA FUNCTIONS"""
 def updateResources(userID, resDict):
     db.Resources.update_one({'userID': userID}, {'$set': resDict})
@@ -260,7 +265,7 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
     for resource in loserResources:
         if resource in resList:
             amountTaken = math.ceil(loserResources[resource] * 0.2)
-            winnerResources[resource] = loserResources[resource] + (amountTaken * 3)
+            winnerResources[resource] = winnerResources[resource] + (amountTaken * 3)
             loserResources[resource] = loserResources[resource] - amountTaken
             totalBonusLoot[resource] = (amountTaken * 3)
     db.Resources.update_one({winnnerResSearch: winner[0]}, {'$set': winnerResources})
@@ -356,3 +361,6 @@ def upgradeAge(userID):
         updateNation(userID, {'age': nextAge})        
         return [True, nextAge]
     return [False, nextAge]
+
+def directMessageUser():
+    pass

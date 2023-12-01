@@ -22,7 +22,8 @@ client = nextcord.Client(intents=intents)
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
-    print('Currently in ' + str(len(client.guilds)) + ' servers');
+    print('Currently in ' + str(len(client.guilds)) + ' servers!');
+    print('We have ' + str(utils.getNumUsers) + ' active players!');
 
 @client.event
 async def on_message(message):
