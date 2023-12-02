@@ -352,7 +352,7 @@ async def on_message(message):
                     attacker = await client.fetch_user(userID)
                     defender = await client.fetch_user(defenderID)
                     await attacker.send(
-                        'YOU HAVE BEEN ATTACKED!\n'
+                        'YOU ATACKED SOMEONE!\n'
                         '```=====BATTLE SUMMARY=====\n' +
                         data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
                         data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
@@ -362,6 +362,7 @@ async def on_message(message):
                         'Defender Casualties: ' + data['defenderCasualties'] + '```\n'
                     )
                     await defender.send(
+                        'YOU HAVE BEEN ATTACKED!\n'
                           '```=====BATTLE SUMMARY=====\n' +
                         data['winner'] + ' DEFEATED ' + data['loser'] + '\n' +
                         data['winner'] + ' Battle Rating: ' + data['winnerBattleRating'] + ' (+25)\n' +
