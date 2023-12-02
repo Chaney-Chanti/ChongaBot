@@ -178,7 +178,7 @@ async def on_message(message):
                         armyStr += unit + ': ' + str(armyData[unit]) + '\n'
                 await message.channel.send('```' + armyStr + '```')
 
-    elif message.content.startswith(prefix + 'shop'):
+    elif message.content.startswith(prefix + 'shop'): #needs to be more dynamic in order to add changes easier
         if len(msgContent) > 3:
             await message.channel.send('Incorrect parameters. Format: ' + prefix + 'shop [unit] [number]')
         elif len(msgContent) == 1 and 'shop' in msgContent[0]:
@@ -205,8 +205,12 @@ async def on_message(message):
                     + ' metal | Roll: ' + str(unitRolls['minutemen']['lowerBound']) + '-' + str(unitRolls['minutemen']['upperBound']) + '\n'
                     'General - cost: ' + str(unitCosts['general']['food']) + ' food, ' + str(unitCosts['general']['metal']) 
                     + ' metal, ' + str(unitCosts['general']['wealth']) + ' wealth | Roll: ' + str(unitRolls['general']['lowerBound']) + '-' + str(unitRolls['general']['upperBound']) + '\n'
-                    'Trebuchet - cost: ' + str(unitCosts['trebuchet']['food']) + ' food, ' + str(unitCosts['trebuchet']['timber']) 
-                    + ' timber | Roll: ' + str(unitRolls['trebuchet']['lowerBound']) + '-' + str(unitRolls['trebuchet']['upperBound']) + '\n```'
+                    'Cannon - cost: ' + str(unitCosts['cannon']['food']) + ' food, ' + str(unitCosts['cannon']['timber']) + ' timber ' 
+                    + str(unitCosts['cannon']['metal']) + ' metal ' + str(unitCosts['cannon']['wealth']) + ' wealth '
+                    + '| Roll: ' + str(unitRolls['cannon']['lowerBound']) + '-' + str(unitRolls['cannon']['upperBound']) + '\n'
+                    + 'Armada - cost: ' + str(unitCosts['armada']['food']) + ' food, ' + str(unitCosts['armada']['timber']) 
+                    + ' timber ' + str(unitCosts['armada']['metal']) +  'metal ' + str(unitCosts['armada']['wealth']) + ' wealth '
+                    + ' | Roll: ' + str(unitRolls['armada']['lowerBound']) + '-' + str(unitRolls['armada']['upperBound']) + '\n```'
                 )
             if age == 'Modern':
                  await message.channel.send(

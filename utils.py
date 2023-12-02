@@ -1,5 +1,4 @@
 
-import nextcord
 import json
 import pymongo
 import os
