@@ -243,7 +243,7 @@ async def on_message(message):
             numUnits = msgContent[2]
 
             medievalList = ['citizen', 'lancer', 'archer', 'calvalry', 'trebuchet']
-            enlightmentList = ['citizen', 'minutemen', 'general', 'cannon']
+            enlightmentList = ['citizen', 'minutemen', 'general', 'cannon', 'armada']
             modernList = ['citizen', 'infantry', 'tank', 'fighter', 'bomber', 'icbm']
             spaceList = ['citizen', 'shocktrooper', 'lasercannon', 'starfighter', 'battlecruiser', 'deathstar']
 
