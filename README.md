@@ -18,18 +18,14 @@ Gather resources {Food, Timber, Metal, Wealth, Oil, and Knowledge}.
 Buy Units to attack other players (Units change based on age)
 Building buildings to increase rate of production of resources
 Climb the leaderboard by attcking players to gain battle rating.
+Advance the ages to obtain stronger units and high production buildings.
 
 * Details
-    Ages: Medieval (starting), Enlightment, Modern, Space
-    Costs (in knowledge):
-    'Enlightment': 50000,
-    'Modern': 200000,
-    'Space': 1000000,
-    Rate of Production of Resources:
-    Medieval: +100
-    Enlightment: +200
-    Modern: +300
-    Space: +400 
+      Ages:
+          Medieval (starting)
+          Enlightment (costs 50000 knowledge)
+          Modern (costs 500000 knowledge)
+          Space (costs 2000000 knowledge)
 
 Units: 
     ===============Medieval===============: 
@@ -93,10 +89,11 @@ Attacking:
 
 Going To The Next Age:
     After going to the next age you will have access to new units. In addition,
-    new buildings have an increase rate of production Medieval[+100], Enlightment[+200],
-    Modern[+300], Space[+400]. This rate of production also affects prebuilt buildings.
+    new buildings have an increase rate of production Medieval[+100], Enlightment[+500],
+    Modern[+1000], Space[+2000]. This rate of production also affects prebuilt buildings.
 
-## Setup
+
+## Setup (For Contributors to the project)
 To get set up, run the following in your cloned directory (Windows).
 You must also have python installed and git.
 
