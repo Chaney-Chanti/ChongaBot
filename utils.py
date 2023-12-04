@@ -9,7 +9,6 @@ import pprint
 from purgo_malum import client
 from dotenv import load_dotenv
 
-
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
 mongoClient = pymongo.MongoClient(CONNECTIONPASSWORD)
@@ -62,7 +61,7 @@ def getUserStats(userID):
 
 def getUnits():
     return ['lancer', 'archer', 'calvalry', 'trebuchet', 
-    'minutement', 'general', 'cannon', 
+    'minutement', 'general', 'cannon', 'armada' 
     'infantry', 'tank', 'fighter', 'bomber', 'icbm',
     'shocktrooper', 'starfighter', 'lasercannon', 'battlecruiser', 'deathstar']
 
@@ -104,9 +103,9 @@ def getUnitsCosts(): #im not sure how dynamic this is? can i just change as i pl
         'trebuchet': { 'food': 300, 'timber': 300, },
         'minutemen': { 'food': 400, 'metal': 400, },
         'general': { 'food': 500, 'metal': 500, 'wealth': 500},
-        'cannon': { 'food': 800, 'timber': 500, 'metal': 500, 'wealth': 500},
-        'armada': { 'food': 5000, 'timber': 5000, 'metal': 5000, 'wealth': 5000},
-        'infantry': { 'food': 800, 'metal': 800, 'wealth': 800},
+        'cannon': { 'food': 400, 'timber': 500, 'metal': 800, 'wealth': 800},
+        'armada': {'food': 5000, 'timber': 5000, 'metal': 5000, 'wealth': 5000},
+        'infantry': { 'food': 600, 'metal': 600, 'wealth': 600},
         'tank': { 'metal': 1000, 'oil': 1000, 'wealth': 1000},
         'fighter': { 'metal': 2000, 'oil': 2000, 'wealth': 2000},
         'bomber': { 'metal': 3000, 'oil': 3000, 'wealth': 3000},
@@ -148,21 +147,18 @@ def getUnitDiceRolls():
         'general': { 'lowerBound': 1, 'upperBound': 60},
         'cannon': { 'lowerBound': 1, 'upperBound': 80},
         'armada': { 'lowerBound': 1, 'upperBound': 500},
-        'infantry': { 'lowerBound': 1, 'upperBound': 150},
-        'tank': { 'lowerBound': 1, 'upperBound': 300},
-        'fighter': { 'lowerBound': 1, 'upperBound': 500},
-        'bomber': { 'lowerBound': 1, 'upperBound': 800},
-        'icbm': { 'lowerBound': 1, 'upperBound': 2000},
-        'shocktrooper': { 'lowerBound': 1, 'upperBound': 800},
-        'lasercannon': { 'lowerBound': 1, 'upperBound': 2000},
-        'starfighter': { 'lowerBound': 1, 'upperBound': 5000},
+        'infantry': { 'lowerBound': 1, 'upperBound': 100},
+        'tank': { 'lowerBound': 1, 'upperBound': 1000},
+        'fighter': { 'lowerBound': 1, 'upperBound': 2000},
+        'bomber': { 'lowerBound': 1, 'upperBound': 3000},
+        'icbm': { 'lowerBound': 1, 'upperBound': 5000},
+        'shocktrooper': { 'lowerBound': 1, 'upperBound': 1000},
+        'lasercannon': { 'lowerBound': 1, 'upperBound': 3000},
+        'starfighter': { 'lowerBound': 1, 'upperBound':7000},
         'battlecruiser': { 'lowerBound': 1, 'upperBound': 10000}, 
         'deathstar': { 'lowerBound': 1, 'upperBound': 100000},
     }
     return unitDiceRolls
-
-def getNumUsers():
-    return db.Nations.count_documents({})
 
 """UPDATE DATA FUNCTIONS"""
 def updateResources(userID, resDict):
@@ -265,10 +261,10 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
     totalBonusLoot = {} #used for summary
     for resource in loserResources:
         if resource in resList:
-            amountTaken = math.ceil(loserResources[resource] * 0.2)
-            winnerResources[resource] = winnerResources[resource] + (amountTaken)
+            amountTaken = math.ceil(loserResources[resource] * 0.1)
+            winnerResources[resource] = winnerResources[resource] + (amountTaken * 2)
             loserResources[resource] = loserResources[resource] - amountTaken
-            totalBonusLoot[resource] = (amountTaken)
+            totalBonusLoot[resource] = (amountTaken * 2)
     db.Resources.update_one({winnnerResSearch: winner[0]}, {'$set': winnerResources})
     db.Resources.update_one({loserResSearch: loser[0]}, {'$set': loserResources})
 
@@ -307,7 +303,7 @@ def buyBuilding(userID, building, numBuild):
     if age == 'Medieval':
         rateIncrease = 100
     elif age == 'Enlightment':
-        rateIncrease = 200
+        rateIncrease = 200    
     if age == 'Modern':
         rateIncrease = 500
     if age == 'Space':
@@ -362,6 +358,3 @@ def upgradeAge(userID):
         updateNation(userID, {'age': nextAge})        
         return [True, nextAge]
     return [False, nextAge]
-
-def directMessageUser():
-    pass
