@@ -101,19 +101,11 @@ def getUnitsCosts(): #im not sure how dynamic this is? can i just change as i pl
         'archer': { 'food': 100, 'timber': 100, },
         'calvalry': { 'food': 200, 'timber': 200, },
         'trebuchet': { 'food': 300, 'timber': 300, },
-<<<<<<< HEAD
         'minutemen': { 'food': 400, 'metal': 400, },
         'general': { 'food': 500, 'metal': 500, 'wealth': 500},
         'cannon': { 'food': 400, 'timber': 500, 'metal': 800, 'wealth': 800},
         'armada': {'food': 5000, 'timber': 5000, 'metal': 5000, 'wealth': 5000},
         'infantry': { 'food': 600, 'metal': 600, 'wealth': 600},
-=======
-        'minutemen': { 'food': 100, 'metal': 100, },
-        'general': { 'food': 200, 'metal': 200, 'wealth': 100},
-        'cannon': { 'food': 200, 'timber': 100, 'metal': 200, 'wealth': 100},
-        'armada': {'food': 5000, 'timber': 5000, 'metal': 5000, 'wealth': 5000},
-        'infantry': { 'food': 300, 'metal': 300, 'wealth': 300},
->>>>>>> 46b13cba9f2a285733e8a99947285833a6da0579
         'tank': { 'metal': 1000, 'oil': 1000, 'wealth': 1000},
         'fighter': { 'metal': 2000, 'oil': 2000, 'wealth': 2000},
         'bomber': { 'metal': 3000, 'oil': 3000, 'wealth': 3000},
@@ -157,7 +149,6 @@ def getUnitDiceRolls():
         'armada': { 'lowerBound': 1, 'upperBound': 500},
         'infantry': { 'lowerBound': 1, 'upperBound': 100},
         'tank': { 'lowerBound': 1, 'upperBound': 1000},
-<<<<<<< HEAD
         'fighter': { 'lowerBound': 1, 'upperBound': 2000},
         'bomber': { 'lowerBound': 1, 'upperBound': 3000},
         'icbm': { 'lowerBound': 1, 'upperBound': 5000},
@@ -166,16 +157,6 @@ def getUnitDiceRolls():
         'starfighter': { 'lowerBound': 1, 'upperBound':7000},
         'battlecruiser': { 'lowerBound': 1, 'upperBound': 10000}, 
         'deathstar': { 'lowerBound': 1, 'upperBound': 100000},
-=======
-        'fighter': { 'lowerBound': 1, 'upperBound': 10000},
-        'bomber': { 'lowerBound': 1, 'upperBound': 30000},
-        'icbm': { 'lowerBound': 1, 'upperBound': 100000},
-        'shocktrooper': { 'lowerBound': 1, 'upperBound': 10000},
-        'lasercannon': { 'lowerBound': 1, 'upperBound': 100000},
-        'starfighter': { 'lowerBound': 1, 'upperBound': 500000},
-        'battlecruiser': { 'lowerBound': 1, 'upperBound': 700000}, 
-        'deathstar': { 'lowerBound': 1, 'upperBound': 10000000},
->>>>>>> 46b13cba9f2a285733e8a99947285833a6da0579
     }
     return unitDiceRolls
 
@@ -280,17 +261,10 @@ def attackSequence(attackerID, defenderID): #problem  with different unit types 
     totalBonusLoot = {} #used for summary
     for resource in loserResources:
         if resource in resList:
-<<<<<<< HEAD
             amountTaken = math.ceil(loserResources[resource] * 0.1)
             winnerResources[resource] = winnerResources[resource] + (amountTaken * 2)
             loserResources[resource] = loserResources[resource] - amountTaken
             totalBonusLoot[resource] = (amountTaken * 2)
-=======
-            amountTaken = math.ceil(loserResources[resource] * 0.2)
-            winnerResources[resource] = loserResources[resource] + (amountTaken * 3)
-            loserResources[resource] = loserResources[resource] - amountTaken
-            totalBonusLoot[resource] = (amountTaken * 3)
->>>>>>> 46b13cba9f2a285733e8a99947285833a6da0579
     db.Resources.update_one({winnnerResSearch: winner[0]}, {'$set': winnerResources})
     db.Resources.update_one({loserResSearch: loser[0]}, {'$set': loserResources})
 
@@ -329,11 +303,7 @@ def buyBuilding(userID, building, numBuild):
     if age == 'Medieval':
         rateIncrease = 100
     elif age == 'Enlightment':
-<<<<<<< HEAD
         rateIncrease = 200    
-=======
-        rateIncrease = 500    
->>>>>>> 46b13cba9f2a285733e8a99947285833a6da0579
     if age == 'Modern':
         rateIncrease = 1000
     if age == 'Space':
