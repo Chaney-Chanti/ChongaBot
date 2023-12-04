@@ -160,6 +160,9 @@ def getUnitDiceRolls():
     }
     return unitDiceRolls
 
+def getNumUsers():
+    return db.Nations.count_documents({})
+
 """UPDATE DATA FUNCTIONS"""
 def updateResources(userID, resDict):
     db.Resources.update_one({'userID': userID}, {'$set': resDict})
