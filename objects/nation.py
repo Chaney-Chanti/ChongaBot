@@ -8,6 +8,7 @@ class CreateNation:
         self.age = 'stone'
         self.battle_rating = 0    
         self.shield = 0
+        self.last_explore = 0
         self.last_event = 0 
         self.wonder = ''
         self.owned_wonders = [] #can roll for wonders for bonuses

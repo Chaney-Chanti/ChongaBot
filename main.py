@@ -133,7 +133,6 @@ async def leaderboard(ctx, arg=None):
 async def claim(ctx, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
     error, response = utils.check_claim(user_id)
-
     if error:
         await ctx.send(response)
         return
@@ -167,7 +166,7 @@ async def claim(ctx, arg=None):
         await ctx.send(resource_message)
     else:
         next_claim = data['resources']['last_claim'] + 3600
-        await ctx.send(f'You have already claimed within the hour. Please wait another hour.\nNext Claim at: {time.strftime("%H:%M:%S", time.localtime(next_claim))}')
+        await ctx.send(f'```You have already claimed within the hour. Please wait another hour.\nNext Claim at: {time.strftime("%H:%M:%S", time.localtime(next_claim))}```')
         
 @client.command(name='shop', aliases=['Shop', 'SHOP'])
 async def shop(ctx, arg1=None, arg2=None):
@@ -187,13 +186,13 @@ async def shop(ctx, arg1=None, arg2=None):
 
         resourceCost = utils.validate_execute_shop(user_id, unit, num_units)
         if str(unit) not in users_units:
-            await ctx.send('This unit does not exist in the game or you do not have access to this unit.')
+            await ctx.send('```This unit does not exist in the game or you do not have access to this unit.```')
         else:
             if not resourceCost[0]:
-                await ctx.send('You must construct additional pylons (not enough resources)')
+                await ctx.send('```You must construct additional pylons (not enough resources)```')
             utils.update_resources(user_id, resourceCost[1])
             utils.update_units(user_id, unit, num_units)
-            await ctx.send('Successfully bought ' + num_units + ' ' + unit + 's')
+            await ctx.send('```Successfully bought ' + num_units + ' ' + unit + 's```')
 
 
 @client.command(name='build', aliases=['Build', 'BUILD'])
@@ -229,9 +228,9 @@ async def next_age(ctx):
     user_id, server_id, username = utils.get_message_info(ctx)
     result = utils.upgrade_age(user_id)
     if result[0]:
-        await ctx.send('Successfully advanced to the ' + result[1] + ' age!')
+        await ctx.send('```Successfully advanced to the ' + result[1] + ' age!```')
     else:
-        await ctx.send('You got no M\'s in ur bank account (not enough resources) or you\'re at most advanced age.')
+        await ctx.send('```You got no M\'s in ur bank account (not enough resources) or you\'re at most advanced age.```')
 
 @client.command(name='attack', aliases=['ATTACK', 'Attack'])
 async def attack(ctx, arg=None):
@@ -247,6 +246,8 @@ async def attack(ctx, arg=None):
         battle_summary = (
             f'```=====BATTLE SUMMARY===== (TESTING)\n'
             f'{data["winner"]} DEFEATED {data["loser"]}\n'
+            f'Winner: {data["winner_username"]} Loser: {data["loser_username"]}\n'
+            f'{data["winner"]} left a message: {data["winner_motto"]}\n'
             f'{data["winner"]} Battle Rating: {data["winner_battle_rating"]} (+25)\n'
             f'{data["winner"]} Plundered {data["tribute"]}\n'
             f'{data["loser"]} Battle Rating: {data["loser_battle_rating"]} (-25)\n'
@@ -265,25 +266,35 @@ async def attack(ctx, arg=None):
         await ctx.send(battle_summary)
 
 @client.command(name='motto', aliases=['Motto', 'MOTTO'])
-async def set_motto(ctx, arg=None):
-    pass
+async def set_motto(ctx, *, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    user_stats = utils.get_user_stats(user_id)
+
+    if arg:
+        user_stats['motto'] = arg
+        utils.update_nation(user_id, user_stats)
+        await ctx.send(f"Your motto has been set to: `{arg}`")
+    else:
+        await ctx.send("Please provide a motto. Example: `c!motto Your motto goes here`")
 
 #shows whats new this patch
 @client.command(name='patch', aliases=['Patch', 'PATCH'])
 async def display_patch(ctx, arg=None):
-    pass
+    await ctx.send('Feature coming soon...')
 
 @client.command(name='explore', aliases=['Explore', 'EXPLORE'])
 async def display_patch(ctx, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
-    user_army = utils.get_user_army(user_id)
-    message, response = utils.explore(user_id,user_army)
-    print(response)
-    await ctx.send(message)
+    error, response = utils.check_explore(ctx, user_id, arg)
+    if error == True:
+        await ctx.send(response)
+    else:
+        user_army = utils.get_user_army(user_id)
+        message = utils.explore(user_id, user_army)
+        await ctx.send(message)
 
 # @client.command(name='event', aliases=['Event', 'EVENT'])
 # async def event(ctx, arg=None):
 #     pass
-
 
 client.run(TOKEN)

@@ -34,6 +34,7 @@ class CreateArmy:
         self.aircraft_carrier = 0
         self.icbm = 0
         self.bunker = 0
+        self.cargoship = 0
         self.spy = 0
 
         self.shocktrooper = 0
@@ -42,6 +43,6 @@ class CreateArmy:
         self.battlecruiser = 0
         self.deathstar = 0
         self.planetary_fortress = 0
-        self.cargoship = 0
+        self.tradeship = 0
  
         

@@ -31,6 +31,13 @@ bonus_loot_multiplier = 2
 battle_rating_increase = 25
 random.seed(a=None)
 big_loot_bonus = 3
+unit_capacities = {
+    'explorer': 500,
+    'caravan': 1000,
+    'conquistador': 2000,
+    'cargoship': 5000,
+    'tradeship': 10000,
+}
 
 """BOOLEAN CHECK FUNCTIONS"""
 def check_nation_exists(user_id):
@@ -131,6 +138,19 @@ def check_attack(ctx, user_id, arg):
             return (False, target_id)
     return (False, user_id)
 
+def check_explore(ctx, user_id, arg):
+    user_army = get_user_army(user_id)
+    user_stats = get_user_stats(user_id)
+    current_time = time.time()
+    time_passed_hours = (current_time - user_stats['last_explore']) / 3600
+    if time_passed_hours <= 1:
+        return (True, '```You have already explored. Try again in an hour...```')
+    if user_army['explorer'] <= 0 and user_army['caravan'] <= 0 and user_army['conquistadand'] <= 0 and user_army['cargoship'] <= 0 and user_army['tradeship'] <= 0:
+        return (True, '```You do not have any exploration units```')
+    # if not arg.isnumeric():
+    #     return (True, '```You must specify a number of units to send```')
+    return (False, 'OK')
+
 def check_in_battle_rating_range(attackerID, defenderID):
     player_one_rating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battle_rating'])
     player_two_rating = json.dumps(list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['battle_rating'])
@@ -178,13 +198,6 @@ def get_user_stats(user_id):
         },
     ]))[0]
 
-<<<<<<< Updated upstream
-def getUnits():
-    return ['lancer', 'archer', 'calvalry', 'trebuchet', 
-    'minutement', 'general', 'cannon', 'armada' 
-    'infantry', 'tank', 'fighter', 'bomber', 'icbm',
-    'shocktrooper', 'starfighter', 'lasercannon', 'battlecruiser', 'deathstar']
-=======
 def get_all_units(): #returns a list of all units
     all_unit_info = get_all_units_info()
     all_units = []
@@ -192,7 +205,6 @@ def get_all_units(): #returns a list of all units
         for unit_name in era_units:
             all_units.append(unit_name)
     return all_units
->>>>>>> Stashed changes
 
 def get_unit_names_by_age(age):
     all_units_info = get_all_units_info()
@@ -203,10 +215,6 @@ def get_unit_names_by_age(age):
     else:
         return []
 
-<<<<<<< Updated upstream
-def getRankings(): #Must change to be only top 50
-    return list(db.Nations.find().sort('battleRating', -1).limit(10))
-=======
 def get_all_units_info():
     return {
         'stone': {
@@ -328,7 +336,6 @@ def get_all_units_info():
                 'costs': {'food': 100, 'timber': 100, },
                 'rolls': {'lowerbound': 1, 'upperbound': 10, },
             },
->>>>>>> Stashed changes
 
         },
         'space' : {
@@ -368,7 +375,7 @@ def get_events():
 
 def get_exploration_events():
   return {
-    (0.00, 0.30): { #free resources
+    (0.00, 0.35): { #free resources
         'free_resources': 'free_resources',
         'stone': 1000,
         'medieval': 5000,
@@ -376,7 +383,7 @@ def get_exploration_events():
         'modern': 20000,
         'space': 40000,
     },
-    (0.30, 0.60): { #free units
+    (0.35, 0.70): { #free units
         'free_units': 'free_units',
         'stone': get_unit_names_by_age('stone'),
         'medieval': get_unit_names_by_age('medieval'),
@@ -384,7 +391,7 @@ def get_exploration_events():
         'modern': get_unit_names_by_age('modern'),
         'space': get_unit_names_by_age('space'),
     },
-    (0.60, 0.70): { #trade route
+    (0.70, 0.90): { #trade route
         'trade_route': 'trade_route',
         'stone': 100,
         'medieval': 200,
@@ -392,13 +399,13 @@ def get_exploration_events():
         'modern': 1000,
         'space': 2000,
     },
-    (0.70, 0.80): { #tough_journey
+    (0.90, 0.95): { #tough_journey
         'tough_journey': 'tough_journey',
     },
-    (0.80, 0.90): { #pirates
+    (0.95, 0.96): { #pirates
         'pirates': 'pirates',
     },
-    (0.90, 0.99): { #big_loot
+    (0.96, 0.99): { #big_loot
         'big_loot': 'big_loot',
         'stone': 1000,
         'medieval': 5000,
@@ -423,24 +430,27 @@ def explore(user_id, user_army):
     users_explorer_units = {key: user_army[key] for key in explorer_units if key in user_army}
     event_chance = round(random.uniform(0, 1), 2) #generate random float between 0 and 1 (inclusive) with decimals to 2 places
     #find which event occurred
-    print(event_chance) #why is 80's not printing anything
     for (lowerbound, upperbound), event in get_exploration_events().items():
         if lowerbound <= event_chance < upperbound:
             break
     if(event).get('free_resources') is not None:
         resources_gained = event[user_age]
-        updated_resources = {
-            'food': data['resources']['food'] + resources_gained,
-            'timber': data['resources']['timber'] + resources_gained,
-            'metal': data['resources']['metal'] + resources_gained,
-            'wealth': data['resources']['wealth'] + resources_gained,
-            'oil': data['resources']['oil'] + resources_gained,
-            'knowledge': data['resources']['knowledge'] + resources_gained,
-        }
+        updated_resources = {}  # Initialize an empty dictionary to store the updated values
+
+        for unit in users_explorer_units:
+            num_units = user_army[unit]  # results in the number of units
+            # Iterate over each resource and update it in a cumulative manner
+            for resource in ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']:
+                resource_key = resource  # Key in the data dictionary
+                updated_resources[resource_key] = data['resources'][resource_key] + (resources_gained * unit_capacities[unit])
+                # Update the data dictionary with the new value
+                data['resources'][resource_key] = updated_resources[resource_key]
+
         update_resources(user_id, updated_resources)
-        return('Your units recruited some mercenaries!', updated_resources)
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```Your units befriended a nearby nation whom brough back gifts!\n' 
+               + str(updated_resources[resource_key]) + ' (of every resource)```')
     elif(event).get('free_units') is not None:
-        print('Your units recruited some mercenaries!')
         users_available_units = event[user_age]
 
         non_combat_units = ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']
@@ -451,42 +461,56 @@ def explore(user_id, user_army):
 
         num_units = random.randint(3,7)
         random_unit = random.choice(result_list)
+        # pprint.pprint(user_army)
         user_army[random_unit] += num_units
         db.Army.update_one({'_id': user_id}, {'$set': user_army})
-        return('Your units recruited some mercenaries!', [num_units, random_unit])
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```Your units recruited some mercenaries!' 
+               + '\nRecruited: ' + str(num_units) + ' ' + str(random_unit) + 's```')
     elif(event).get('trade_route') is not None:
         resource_rate_gain = event[user_age]
         updated_resources_rates = {
-            'food': data['resources']['food_rate'] + resource_rate_gain,
-            'timber': data['resources']['timber_rate'] + resource_rate_gain,
-            'metal': data['resources']['metal_rate'] + resource_rate_gain,
-            'wealth': data['resources']['wealth_rate'] + resource_rate_gain,
-            'oil': data['resources']['oil_rate'] + resource_rate_gain,
-            'knowledge': data['resources']['knowledge_rate'] + resource_rate_gain,
+            'food_rate': data['resources']['food_rate'] + resource_rate_gain,
+            'timber_rate': data['resources']['timber_rate'] + resource_rate_gain,
+            'metal_rate': data['resources']['metal_rate'] + resource_rate_gain,
+            'wealth_rate': data['resources']['wealth_rate'] + resource_rate_gain,
+            'oil_rate': data['resources']['oil_rate'] + resource_rate_gain,
+            'knowledge_rate': data['resources']['knowledge_rate'] + resource_rate_gain,
         }
+        
         update_resources(user_id, updated_resources_rates)
-        return('Your units discovered a trade route with China!', updated_resources_rates)
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```Your units discovered a trade route with China!\n' 
+               + 'resource rate increased by ' + str(resource_rate_gain) + '```')
     elif(event).get('tough_journey') is not None:
         for unit in explorer_units:
             user_army[unit] = math.floor(user_army[unit]/2)
         db.Army.update_one({'_id': user_id}, {'$set': user_army})
-        return('You exploration units had a tough journey... you lost half your men', math.floor(user_army[unit]/2))
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```You exploration units had a tough journey... you lost half your men\n' 
+               + 'Casualties: ' + str(math.floor(user_army[unit]/2)) + '```')
     elif(event).get('pirates') is not None:
         for unit in explorer_units:
             user_army[unit] = 0
         db.Army.update_one({'_id': user_id}, {'$set': user_army})
-        return('You were attacked by pirates, all your units died', 0)
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('You were attacked by pirates, all your units died')
     elif(event).get('big_loot') is not None:
-        updated_resources = {
-            'food': data['resources']['food'] + resources_gained * big_loot_bonus,
-            'timber': data['resources']['timber'] + resources_gained * big_loot_bonus,
-            'metal': data['resources']['metal'] + resources_gained * big_loot_bonus,
-            'wealth': data['resources']['wealth'] + resources_gained * big_loot_bonus,
-            'oil': data['resources']['oil'] + resources_gained * big_loot_bonus,
-            'knowledge': data['resources']['knowledge'] + resources_gained * big_loot_bonus,
-        }
+        resources_gained = event[user_age]
+        updated_resources = {}  # Initialize an empty dictionary to store the updated values
+
+        for unit in users_explorer_units:
+            num_units = user_army[unit]  # results in the number of units
+            # Iterate over each resource and update it in a cumulative manner
+            for resource in ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']:
+                resource_key = resource  # Key in the data dictionary
+                updated_resources[resource_key] = data['resources'][resource_key] + ((resources_gained * big_loot_bonus) * unit_capacities[unit])
+                # Update the data dictionary with the new value
+                data['resources'][resource_key] = updated_resources[resource_key]
         update_resources(user_id, updated_resources)
-        return('Your units conquered a small nation and brought back tribute!', updated_resources)
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```Your units conquered a small nation and brought back tribute!\n' +
+               'Collected: ' + str(updated_resources[resource_key]) + ' (every resource)```')
     elif(event).get('wonder') is not None:
         print('Your units discovered a wonder!')
         # pprint.pprint(user_stats)
@@ -565,10 +589,10 @@ def get_buildings_costs():
 
 def get_age_costs():
     ageCosts = {
-        'medival': 50000,
-        'englightment': 100000,
-        'modern': 500000,
-        'space': 1000000,
+        'medival': 100000,
+        'englightment': 500000,
+        'modern': 1000000,
+        'space': 2000000,
     }
     return ageCosts
 
@@ -607,7 +631,6 @@ def attackSequence(attacker_id, defender_id):
     for unit in non_combat_units:
         if unit in attacker_army:
             del attacker_army[unit]
-
 
     attacker_army_key_list = list(attacker_army.keys())
     defender_army_key_list = list(defender_army.keys())
@@ -696,8 +719,9 @@ def attackSequence(attacker_id, defender_id):
     battleSummary = {
         'winner': winner_data['name'].upper(),
         'loser': loser_data['name'].upper(),
-        'winner_username': '',
-        'lower_username': '',
+        'winner_username': winner_data['username'],
+        'loser_username': loser_data['username'],
+        'winner_motto': winner_data['motto'],
         'winner_battle_rating': str(winner_data['battle_rating'] + battle_rating_increase),
         'loser_battle_rating': str(winner_data['battle_rating'] - battle_rating_increase),
         'tribute': totalBonusLoot,
