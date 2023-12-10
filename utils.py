@@ -6,51 +6,170 @@ import random
 import time
 import math
 import pprint
-from purgo_malum import client
 from dotenv import load_dotenv
 
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
 mongoClient = pymongo.MongoClient(CONNECTIONPASSWORD)
 db = mongoClient.ChongaBot
+prefix = 'c!'
+
+# with open('settings.json') as settings_file:
+#     data = json.load(settings_file)
+
+"""SETTINGS"""
+battle_rating_range = 200
+age_resource_rate_increases = {
+    'stone': 100,
+    'medieval': 200,
+    'enlightment': 500,
+    'modern': 1000,
+    'space': 1500
+}
+steal_percentage = 0.1
+bonus_loot_multiplier = 2
+battle_rating_increase = 25
+random.seed(a=None)
+big_loot_bonus = 3
 
 """BOOLEAN CHECK FUNCTIONS"""
-def badWordFilter(text):
-    return client.contains_profanity(text, add='you')
+def check_nation_exists(user_id):
+    return db.Nations.count_documents({'_id': user_id}) > 0
 
-def checkCreation(userID, name):
-    return db.Nations.count_documents({'_id': userID}) > 0 or badWordFilter(name)
+def check_createnation(userID, args):
+    #if one argument is pass, len(arg) is length of the one arguement
+    #if multiple arguments are passed, len(arg) is number of arguements
+    num_args = args.split()
+    if len(num_args) > 1:
+        return(True, f'Incorrect parameters. Format: {prefix}createnation [name]')
+    elif check_nation_exists(userID):
+        return (True, 'Nation already exists! You may only have one nation for all servers!')
+    elif len(args) > 25:
+        return(True, 'Nation name is too long!')
+    else:
+        return (False, 'OK')
+    
+def check_stats(ctx, userID, arg):
+    #get number of arguments
+    if arg != None:
+        num_args = arg.split()
+        #go through checks
+        if len(num_args) > 2:
+            return(True, f'Incorrect parameters. Format: {prefix}stats or {prefix}stats username')
+        if len(ctx.message.mentions) == 1:
+            target_id = ctx.message.mentions[0].id
+            if not player_exists_via_id(target_id):
+                return (True, 'User does not exist idiot!')
+            return (False, target_id)
+        else:
+            if not player_exists_via_username(arg):
+                return (True, 'User does not exist idiot!')
+            target_id = get_user_id_from_username(arg)
+            return (False, target_id)
+    return (False, userID)
 
-def checkBattleRatingRange(attackerID, defenderID):
-    print(attackerID, defenderID)
-    playerOneRating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battleRating'])
-    playerTwoRating = json.dumps(list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['battleRating'])
-    return abs(int(playerOneRating) - int(playerTwoRating)) <= 200 
+def check_claim(userID):
+    if not check_nation_exists(userID):
+        return(True, 'User does not exist')
+    return(False, 'OK')
 
-def playerExistsViaID(userID):
+def check_shop(userID, arg):
+    #get number of arguments
+    if arg != None:
+        num_args = arg.split()
+        if not check_nation_exists(userID):
+            return (True, 'User does not exist idiot!')
+        if len(num_args) > 2:
+            return(True, f'Incorrect parameters. Format: {prefix}shop or {prefix}shop unit number')
+        if arg not in get_all_units():
+            print(arg, get_all_units)
+            return(True, 'Unit does not exist')
+    return (False, 'OK')
+
+def check_build(userID, arg1, arg2):
+    buildings = get_buildings()
+    if arg1 != None and arg2 != None:
+        num_args = arg1.split()
+        if not check_nation_exists(userID):
+            return (True, 'User does not exist idiot!')
+        if len(num_args) > 2:
+            return(True, f'Incorrect parameters. Format: {prefix}build or {prefix}build unit number')
+        if arg1.lower() not in buildings:
+            return(True, f'Building does not exist...')
+        if not arg2.isnumeric():
+            return (True, f'You have to specify a number of units to buy')
+    return (False, 'OK')
+        
+def check_attack(ctx, user_id, arg):
+    if arg != None: #only player is @ and username
+        num_args = arg.split()
+        #go through checks
+        if len(num_args) > 1:
+            return(True, f'Incorrect parameters. Format: {prefix}attack or {prefix}attack username')
+        if has_shield(user_id, time.time()):
+            return (True, 'This player has a shield, you can\'t attack them...')
+        if not has_army(user_id):
+            return (True, 'Stop the cap you have no army...')
+        if len(ctx.message.mentions) == 1:
+            target_id = ctx.message.mentions[0].id
+            if ctx.message.author.id == user_id:
+                return (True, 'You cannot attack yourself...')
+            if not player_exists_via_id(target_id):
+                return (True, 'User does not exist idiot!')
+            if not check_in_battle_rating_range(user_id, target_id):
+                # battle_rating_range = data.get('battle_rating_range')
+                return (True, f'Your battle rating is either to high or to low (+-{battle_rating_range})')
+            return (False, target_id)
+        else:
+            if not player_exists_via_username(arg):
+                return (True, 'User does not exist idiot!')
+            target_id = get_user_id_from_username(arg)
+            if ctx.message.author.id == target_id:
+                return (True, 'You cannot attack yourself...')
+            if not check_in_battle_rating_range(user_id, target_id):
+                return (True, f'Your battle rating is either to high or to low (+-{battle_rating_range})')
+            return (False, target_id)
+    return (False, user_id)
+
+def check_in_battle_rating_range(attackerID, defenderID):
+    player_one_rating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battle_rating'])
+    player_two_rating = json.dumps(list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['battle_rating'])
+    # print('DEBUG', 'RATINGS: ', player_one_rating, player_two_rating)
+    return abs(int(player_one_rating) - int(player_two_rating)) <= battle_rating_range 
+
+def player_exists_via_id(userID):
     return db.Nations.count_documents({'_id': userID}) > 0
 
-def playerExistsViaUsername(username):
+def player_exists_via_username(username):
     return db.Nations.count_documents({'username': username}) > 0
 
-def hasShield(defenderID, currTime):
+def has_shield(defenderID, currTime):
     return list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['shield'] >= currTime
 
+def has_army(user_id):
+    armyData = get_user_army(user_id)
+    units = get_all_units()
+    for unit in armyData:
+        if unit in units and armyData[unit] > 0 :
+            return True
+    return False
+            
 """GET DATA FUNCTIONS"""
-def getUserIDFromUsername(username):
-    return db.Nations.find({'username': username}, {'userID': 1})[0]['_id']
+def get_message_info(message_data):
+    # print('DEBUG: ', message_data)
+    return (message_data.author.id, message_data.guild.id, message_data.author.name)
 
-def getUserStats(userID):
-    idFilter = '_id'
-    if '#' in str(userID):
-        idFilter = 'username'
+def get_user_id_from_username(username):
+    return db.Nations.find({'username': username}, {'_id': 1})[0]['_id']
+
+def get_user_stats(user_id):
     return list(db.Nations.aggregate([
-        {'$match': {idFilter: userID}},
+        {'$match': {'_id': user_id}},
         {
             '$lookup': {
                 'from': 'Resources',
-                'localField': idFilter,
-                'foreignField': 'userID',
+                'localField': '_id',
+                'foreignField': '_id',
                 'as': 'resources',
             }
         },
@@ -59,66 +178,381 @@ def getUserStats(userID):
         },
     ]))[0]
 
+<<<<<<< Updated upstream
 def getUnits():
     return ['lancer', 'archer', 'calvalry', 'trebuchet', 
     'minutement', 'general', 'cannon', 'armada' 
     'infantry', 'tank', 'fighter', 'bomber', 'icbm',
     'shocktrooper', 'starfighter', 'lasercannon', 'battlecruiser', 'deathstar']
+=======
+def get_all_units(): #returns a list of all units
+    all_unit_info = get_all_units_info()
+    all_units = []
+    for era_units in all_unit_info.values():
+        for unit_name in era_units:
+            all_units.append(unit_name)
+    return all_units
+>>>>>>> Stashed changes
 
-def getUserArmy(userID):
-    return list(db.Army.find({'userID': userID}, {'_id': 0}))[0]
+def get_unit_names_by_age(age):
+    all_units_info = get_all_units_info()
+    
+    if age in all_units_info:
+        units_info_for_age = all_units_info[age]
+        return list(units_info_for_age.keys())
+    else:
+        return []
 
+<<<<<<< Updated upstream
 def getRankings(): #Must change to be only top 50
     return list(db.Nations.find().sort('battleRating', -1).limit(10))
+=======
+def get_all_units_info():
+    return {
+        'stone': {
+            'slinger': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'clubman': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'spearman': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'archer': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'keep': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'explorer': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+        },
+        'medieval': {
+            'knight': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'crossbowman': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'cavalry': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'trebuchet': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'war_elephant': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'castle': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'caravan': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+        },
+        'enlightment': {
+            'minutemen':{ 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'general': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'cannon': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'armada': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'fortress': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'conquistador': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+        },
+        'modern': {
+            'infantry': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'tank': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'fighter': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'bomber': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'battleship': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'aircraft_carrier': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'icbm': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'bunker': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'cargoship': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+>>>>>>> Stashed changes
 
-def getUserRank(userID): #Must change to be only top 50
-    allPlayersSorted = list(db.Nations.find().sort('battleRating', -1))
+        },
+        'space' : {
+            'shocktrooper': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'lasercannon': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'starfighter': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'battlecruiser': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+            'deathstar': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+               'planetary_fortress': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+               'tradeship': { 
+                'costs': {'food': 100, 'timber': 100, },
+                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            },
+        },
+    }
+
+def get_events():
+    pass
+
+def get_exploration_events():
+  return {
+    (0.00, 0.30): { #free resources
+        'free_resources': 'free_resources',
+        'stone': 1000,
+        'medieval': 5000,
+        'enlightenment': 10000,
+        'modern': 20000,
+        'space': 40000,
+    },
+    (0.30, 0.60): { #free units
+        'free_units': 'free_units',
+        'stone': get_unit_names_by_age('stone'),
+        'medieval': get_unit_names_by_age('medieval'),
+        'enlightenment': get_unit_names_by_age('enlightment'),
+        'modern': get_unit_names_by_age('modern'),
+        'space': get_unit_names_by_age('space'),
+    },
+    (0.60, 0.70): { #trade route
+        'trade_route': 'trade_route',
+        'stone': 100,
+        'medieval': 200,
+        'enlightenment': 500,
+        'modern': 1000,
+        'space': 2000,
+    },
+    (0.70, 0.80): { #tough_journey
+        'tough_journey': 'tough_journey',
+    },
+    (0.80, 0.90): { #pirates
+        'pirates': 'pirates',
+    },
+    (0.90, 0.99): { #big_loot
+        'big_loot': 'big_loot',
+        'stone': 1000,
+        'medieval': 5000,
+        'enlightenment': 10000,
+        'modern': 20000,
+        'space': 40000,
+    },
+    (0.99, 1.00): { #wonder
+        'wonder': 'wonder',
+        'stone': [],
+        'medieval': [],
+        'enlightenment': [],
+        'modern': [],
+        'space': [],
+    },
+}
+
+def explore(user_id, user_army):
+    data = get_user_stats(user_id)
+    user_age = get_age(user_id)
+    explorer_units = ['explorer', 'caravan', 'conquistador', 'spy', 'cargoship', 'tradeship']
+    users_explorer_units = {key: user_army[key] for key in explorer_units if key in user_army}
+    event_chance = round(random.uniform(0, 1), 2) #generate random float between 0 and 1 (inclusive) with decimals to 2 places
+    #find which event occurred
+    print(event_chance) #why is 80's not printing anything
+    for (lowerbound, upperbound), event in get_exploration_events().items():
+        if lowerbound <= event_chance < upperbound:
+            break
+    if(event).get('free_resources') is not None:
+        resources_gained = event[user_age]
+        updated_resources = {
+            'food': data['resources']['food'] + resources_gained,
+            'timber': data['resources']['timber'] + resources_gained,
+            'metal': data['resources']['metal'] + resources_gained,
+            'wealth': data['resources']['wealth'] + resources_gained,
+            'oil': data['resources']['oil'] + resources_gained,
+            'knowledge': data['resources']['knowledge'] + resources_gained,
+        }
+        update_resources(user_id, updated_resources)
+        return('Your units recruited some mercenaries!', updated_resources)
+    elif(event).get('free_units') is not None:
+        print('Your units recruited some mercenaries!')
+        users_available_units = event[user_age]
+
+        non_combat_units = ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']
+        start_index = users_available_units.index(non_combat_units[0])
+        end_index = start_index + len(non_combat_units)
+        # Remove the sublist using slicing
+        result_list = users_available_units[:start_index] + users_available_units[end_index:]
+
+        num_units = random.randint(3,7)
+        random_unit = random.choice(result_list)
+        user_army[random_unit] += num_units
+        db.Army.update_one({'_id': user_id}, {'$set': user_army})
+        return('Your units recruited some mercenaries!', [num_units, random_unit])
+    elif(event).get('trade_route') is not None:
+        resource_rate_gain = event[user_age]
+        updated_resources_rates = {
+            'food': data['resources']['food_rate'] + resource_rate_gain,
+            'timber': data['resources']['timber_rate'] + resource_rate_gain,
+            'metal': data['resources']['metal_rate'] + resource_rate_gain,
+            'wealth': data['resources']['wealth_rate'] + resource_rate_gain,
+            'oil': data['resources']['oil_rate'] + resource_rate_gain,
+            'knowledge': data['resources']['knowledge_rate'] + resource_rate_gain,
+        }
+        update_resources(user_id, updated_resources_rates)
+        return('Your units discovered a trade route with China!', updated_resources_rates)
+    elif(event).get('tough_journey') is not None:
+        for unit in explorer_units:
+            user_army[unit] = math.floor(user_army[unit]/2)
+        db.Army.update_one({'_id': user_id}, {'$set': user_army})
+        return('You exploration units had a tough journey... you lost half your men', math.floor(user_army[unit]/2))
+    elif(event).get('pirates') is not None:
+        for unit in explorer_units:
+            user_army[unit] = 0
+        db.Army.update_one({'_id': user_id}, {'$set': user_army})
+        return('You were attacked by pirates, all your units died', 0)
+    elif(event).get('big_loot') is not None:
+        updated_resources = {
+            'food': data['resources']['food'] + resources_gained * big_loot_bonus,
+            'timber': data['resources']['timber'] + resources_gained * big_loot_bonus,
+            'metal': data['resources']['metal'] + resources_gained * big_loot_bonus,
+            'wealth': data['resources']['wealth'] + resources_gained * big_loot_bonus,
+            'oil': data['resources']['oil'] + resources_gained * big_loot_bonus,
+            'knowledge': data['resources']['knowledge'] + resources_gained * big_loot_bonus,
+        }
+        update_resources(user_id, updated_resources)
+        return('Your units conquered a small nation and brought back tribute!', updated_resources)
+    elif(event).get('wonder') is not None:
+        print('Your units discovered a wonder!')
+        # pprint.pprint(user_stats)
+
+def get_users_available_units(age): # maybe make a for loop and loop through unit costs or dice rolls
+    all_unit_info = get_all_units_info()
+    unit_list = []
+    for era, units in all_unit_info.items():
+        if era.lower() == age.lower():
+            unit_list.extend(units.keys())
+    return unit_list
+
+def get_unit_costs():
+    all_unit_info = get_all_units_info()
+    simplified_costs = {}
+    for era, era_units in all_unit_info.items():
+        for unit_name, unit_info in era_units.items():
+            costs = unit_info.get('costs', {})
+            simplified_costs[unit_name] = costs
+    return simplified_costs
+
+def get_unit_dice_rolls():
+    all_unit_info = get_all_units_info()
+    simplified_rolls = {}
+    for era, era_units in all_unit_info.items():
+        for unit_name, unit_info in era_units.items():
+            rolls = unit_info.get('rolls', {})
+            lower_bound = rolls.get('lowerbound')
+            upper_bound = rolls.get('upperbound')
+            simplified_rolls[unit_name] = {'lowerbound': lower_bound, 'upperbound': upper_bound}
+    return simplified_rolls
+
+
+def get_user_army(user_id):
+    return list(db.Army.find({'_id': user_id}, {'_id': 0}))[0]
+
+def get_rankings(): #Must change to be only top 50
+    return list(db.Nations.find().sort([('battle_rating', -1), ('_id', -1)]).limit(10))
+
+def get_user_rank(user_id): #Must change to be only top 50
+    allPlayersSorted = list(db.Nations.find().sort([('battle_rating', -1), ('_id', -1)]).limit(10))
     numPlayers = db.Nations.count_documents({})
     for i in range(len(allPlayersSorted)):
-        if allPlayersSorted[i]['_id'] == userID:
+        if allPlayersSorted[i]['_id'] == user_id:
             return i+1, numPlayers
 
-def getAge(userID):
-    return list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]['age']
+def get_age(user_id):
+    return list(db.Nations.find({'_id': user_id}, {'_id': 0}))[0]['age']
 
-def getVictims(userID):
-    userBR = list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]['battleRating']
-    upperRange = userBR + 200
-    lowerRange = userBR - 200
+def get_victims(user_id):
+    userBR = list(db.Nations.find({'_id': user_id}, {'_id': 0}))[0]['battle_rating']
+    upperRange = userBR + battle_rating_range
+    lowerRange = userBR - battle_rating_range
     #Might need refactor for a lot of players
-    playerList = list(db.Nations.find().sort('battleRating', -1))
-    pprint.pprint(playerList)
+    playerList = list(db.Nations.find().sort('battle_rating', -1))
     attackablePlayers = []
     for player in playerList:
-        if player['battleRating'] in range(lowerRange, upperRange) and not hasShield(player['_id'], time.time()):
-            if not player['_id'] == userID: #Exclude self player
+        if player['battle_rating'] in range(lowerRange, upperRange) and not has_shield(player['_id'], time.time()):
+            if not player['_id'] == user_id: #Exclude self player
                 attackablePlayers.append(player['username'])
     return attackablePlayers
 
-def getUnitsCosts(): #im not sure how dynamic this is? can i just change as i please?
-    unitCosts = { 
-        'lancer': { 'food': 50, 'timber': 50, },
-        'archer': { 'food': 100, 'timber': 100, },
-        'calvalry': { 'food': 200, 'timber': 200, },
-        'trebuchet': { 'food': 300, 'timber': 300, },
-        'minutemen': { 'food': 400, 'metal': 400, },
-        'general': { 'food': 500, 'metal': 500, 'wealth': 500},
-        'cannon': { 'food': 400, 'timber': 500, 'metal': 800, 'wealth': 800},
-        'armada': {'food': 5000, 'timber': 5000, 'metal': 5000, 'wealth': 5000},
-        'infantry': { 'food': 600, 'metal': 600, 'wealth': 600},
-        'tank': { 'metal': 1000, 'oil': 1000, 'wealth': 1000},
-        'fighter': { 'metal': 2000, 'oil': 2000, 'wealth': 2000},
-        'bomber': { 'metal': 3000, 'oil': 3000, 'wealth': 3000},
-        'icbm': { 'metal': 10000, 'oil': 10000, 'wealth': 10000},
-        'shocktrooper': { 'metal': 2000, 'oil': 500, 'wealth': 2000},
-        'lasercannon': { 'metal': 15000, 'oil': 15000, 'wealth': 15000},
-        'starfighter': { 'metal': 25000, 'oil': 20000, 'wealth': 20000},
-        'battlecruiser': { 'metal': 30000, 'oil': 30000, 'wealth': 30000},
-        'deathstar': { 'metal': 100000, 'oil': 100000, 'wealth': 100000},
-    }
-    return unitCosts
+def get_buildings():
+    return ['granary', 'lumbermill', 'quarry', 'oilrig', 'oil rig', 'market', 'university']
 
-def getBuildingsCosts():
+def get_buildings_costs():
     buildingCosts = { 
         'granary': { 'timber': 1000, 'metal': 1000, },
         'lumbermill': { 'timber': 3000, 'metal': 3000, },
@@ -129,220 +563,200 @@ def getBuildingsCosts():
     }
     return buildingCosts
 
-def getAgeCosts():
+def get_age_costs():
     ageCosts = {
-        'Enlightment': 50000,
-        'Modern': 200000,
-        'Space': 1000000,
+        'medival': 50000,
+        'englightment': 100000,
+        'modern': 500000,
+        'space': 1000000,
     }
     return ageCosts
 
-def getUnitDiceRolls():
-    unitDiceRolls = {
-        'lancer': { 'lowerBound': 1, 'upperBound': 5},
-        'archer': { 'lowerBound': 1, 'upperBound': 15},
-        'calvalry': { 'lowerBound': 1, 'upperBound': 30},
-        'trebuchet': {'lowerBound': 1, 'upperBound': 50},
-        'minutemen': { 'lowerBound': 1, 'upperBound': 50},
-        'general': { 'lowerBound': 1, 'upperBound': 60},
-        'cannon': { 'lowerBound': 1, 'upperBound': 80},
-        'armada': { 'lowerBound': 1, 'upperBound': 500},
-        'infantry': { 'lowerBound': 1, 'upperBound': 100},
-        'tank': { 'lowerBound': 1, 'upperBound': 1000},
-        'fighter': { 'lowerBound': 1, 'upperBound': 2000},
-        'bomber': { 'lowerBound': 1, 'upperBound': 3000},
-        'icbm': { 'lowerBound': 1, 'upperBound': 5000},
-        'shocktrooper': { 'lowerBound': 1, 'upperBound': 1000},
-        'lasercannon': { 'lowerBound': 1, 'upperBound': 3000},
-        'starfighter': { 'lowerBound': 1, 'upperBound':7000},
-        'battlecruiser': { 'lowerBound': 1, 'upperBound': 10000}, 
-        'deathstar': { 'lowerBound': 1, 'upperBound': 100000},
-    }
-    return unitDiceRolls
 
-def getNumUsers():
+def get_num_users():
     return db.Nations.count_documents({})
 
 """UPDATE DATA FUNCTIONS"""
-def updateResources(userID, resDict):
-    db.Resources.update_one({'userID': userID}, {'$set': resDict})
+def update_resources(userID, resDict):
+    db.Resources.update_one({'_id': userID}, {'$set': resDict})
     return
 
-def updateResourceRate(userID, resDict):
-    db.Resources.update_one({'userID': userID}, {'$set': resDict})
+def update_resource_rate(userID, resDict):
+    db.Resources.update_one({'_id': userID}, {'$set': resDict})
     return
 
-def updateUnits(userID, unit, numUnits):
-    data = list(db.Army.find({'userID': userID}, {'_id': 0}))[0]
-    # pprint.pprint(data) debug
-    db.Army.update_one({'userID': userID}, {'$set': {unit: data[unit] + int(numUnits)}})
+def update_units(userID, unit, numUnits):
+    data = list(db.Army.find({'_id': userID}, {'_id': 0}))[0]
+    db.Army.update_one({'_id': userID}, {'$set': {unit: data[unit] + int(numUnits)}})
     return 
 
-def updateBuilding(userID, building, buildingDict):
+def update_building(userID, building, buildingDict):
     db.Nations.update_one({'_id': userID}, {'$set': {building: buildingDict[building]}}) # switches false to true and level -> 1
     return
 
-def updateNation(userID, data):
+def update_nation(userID, data):
     db.Nations.update_one({'_id': userID}, {'$set': data}) # switches false to true and level -> 1
 
 """GAME SERVICE FUNCTIONS """
-def attackSequence(attackerID, defenderID): #problem  with different unit types fighting each other
-    attackerArmy = list(db.Army.find({'userID': attackerID}, {'_id': 0}))[0]
-    defenderArmy = list(db.Army.find({'userID': defenderID}, {'_id': 0}))[0]
-    attackerArmyKeyList = list(attackerArmy.keys())
-    defenderArmyKeyList = list(defenderArmy.keys())
-    unitDiceRolls = getUnitDiceRolls()
-    attackerCasualties = {}
-    defenderCasualties = {}
-    random.seed(a=None)
-    i = j = 3
-    while i < len(attackerArmyKeyList) and j < len(defenderArmyKeyList):      
-        attackerUnitCount = attackerArmy[attackerArmyKeyList[i]] #reults to a string index
-        defenderUnitCount = defenderArmy[defenderArmyKeyList[j]] #reults to a string index
-        if attackerUnitCount == 0:
-            i += 1
-            winner = [defenderID, defenderCasualties, defenderArmy]
-            loser = [attackerID, attackerCasualties, attackerArmy]
-        elif defenderUnitCount == 0:
-            j += 1
-            winner = [attackerID, attackerCasualties, attackerArmy]
-            loser = [defenderID, defenderCasualties, defenderArmy]
-        else:
-            attackerRoll = random.randint(unitDiceRolls[attackerArmyKeyList[i]]['lowerBound'], unitDiceRolls[attackerArmyKeyList[i]]['upperBound'])
-            defenderRoll = random.randint(unitDiceRolls[defenderArmyKeyList[j]]['lowerBound'], unitDiceRolls[defenderArmyKeyList[j]]['upperBound'])
+def attackSequence(attacker_id, defender_id):
+    attacker_army = list(db.Army.find({'_id': attacker_id}, {'_id': 0}))[0]
+    defender_army = list(db.Army.find({'_id': defender_id}, {'_id': 0}))[0]
+    
+    #This is to not let add defense units to attackers force
+    non_combat_units = ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']
+    for unit in non_combat_units:
+        if unit in attacker_army:
+            del attacker_army[unit]
+
+
+    attacker_army_key_list = list(attacker_army.keys())
+    defender_army_key_list = list(defender_army.keys())
+    unit_dice_rolls = get_unit_dice_rolls()
+    attacker_casualties = {}
+    defender_casualties = {}
+    i = j = 2 # i think im trying to skip user info and go straight to army data
+    while i < len(attacker_army_key_list) and j < len(defender_army_key_list):      
+        attacker_unit_count = attacker_army[attacker_army_key_list[i]]
+        defender_unit_count = defender_army[defender_army_key_list[j]]
+        # print('DEBUG', 'ATTACKER_UNIT_COUNT:', attacker_unit_count, 'DEFENDER_UNIT_COUNT', defender_unit_count)
+        if attacker_unit_count == 0: #attacker has no units left, for the specific unit
+            print('attacker unit', attacker_army_key_list[i])
+            print('defender unit', defender_army_key_list[j])
+            i += 1 #move to next unit in the list
+            winner = [defender_id, defender_casualties, defender_army]
+            loser = [attacker_id, attacker_casualties, attacker_army]
+        if defender_unit_count == 0: #defender has no units left, for the specific unit
+            j += 1 #move to next unit in the list
+            winner = [attacker_id, attacker_casualties, attacker_army]
+            loser = [defender_id, defender_casualties, defender_army]
+        else: #combat simulation
+            attackerRoll = random.randint(unit_dice_rolls[attacker_army_key_list[i]]['lowerbound'], unit_dice_rolls[attacker_army_key_list[i]]['upperbound'])
+            defenderRoll = random.randint(unit_dice_rolls[defender_army_key_list[j]]['lowerbound'], unit_dice_rolls[defender_army_key_list[j]]['upperbound'])
             if attackerRoll > defenderRoll:
-                if defenderArmyKeyList[j] in defenderCasualties:
-                    defenderCasualties[defenderArmyKeyList[j]] += 1 # I want to avoid setting the values to 0 in the dict and just write to it
+                #update casualties
+                if defender_army_key_list[j] in defender_casualties:
+                    defender_casualties[defender_army_key_list[j]] += 1 #increment casualty counter
                 else: 
-                    defenderCasualties[defenderArmyKeyList[j]] = 1
-                defenderArmy[defenderArmyKeyList[j]] -= 1
-                winner = [attackerID, attackerCasualties, attackerArmy]
-                loser = [defenderID, defenderCasualties, defenderArmy]
+                    defender_casualties[defender_army_key_list[j]] = 1 #set casualty counter if new unit
+                #reduce army by lost unit
+                defender_army[defender_army_key_list[j]] -= 1
+                winner = [attacker_id, attacker_casualties, attacker_army]
+                loser = [defender_id, defender_casualties, defender_army]
             elif attackerRoll < defenderRoll:
-                if attackerArmyKeyList[i] in attackerCasualties:
-                    attackerCasualties[attackerArmyKeyList[i]] += 1 # I want to avoid setting the values to 0 in the dict and just write to it
+                #update casualties
+                if attacker_army_key_list[i] in attacker_casualties:
+                    attacker_casualties[attacker_army_key_list[i]] += 1 #increment casualty counter
                 else: 
-                    attackerCasualties[attackerArmyKeyList[i]] = 1
-                attackerArmy[attackerArmyKeyList[i]] -= 1
-                winner = [defenderID, defenderCasualties, defenderArmy]
-                loser = [attackerID, attackerCasualties, attackerArmy]
+                    attacker_casualties[attacker_army_key_list[i]] = 1 #set casualty counter if new unit
+                #reduce army by lost unit
+                attacker_army[attacker_army_key_list[i]] -= 1
+                winner = [defender_id, defender_casualties, defender_army]
+                loser = [attacker_id, attacker_casualties, attacker_army]
 
     #Update users' battle rating and shields
-    loserData = list(db.Nations.find({'userID': loser[0]}))
-    if len(loserData) == 0:
-        loserData = list(db.Nations.find({'_id': loser[0]}))[0]
-        loserSearch = '_id'
-        loserResSearch = 'userID'
+    loser_data = list(db.Nations.find({'_id': loser[0]}))
+    # pprint.pprint(loserData)
+    if len(loser_data) == 0:
+        loser_data = list(db.Nations.find({'_id': loser[0]}))[0]
     else:
-        loserData = loserData[0]
-        loserSearch = 'username'
-        loserResSearch = 'username'
-    winnerData = list(db.Nations.find({'userID': winner[0]}))
-    if len(winnerData) == 0:
-        winnerData = list(db.Nations.find({'_id': winner[0]}))[0]
-        winnerSearch = '_id'
-        winnnerResSearch = 'userID'
+        loser_data = loser_data[0]
+       
+    winner_data = list(db.Nations.find({'_id': winner[0]}))
+    if len(winner_data) == 0:
+        winner_data = list(db.Nations.find({'_id': winner[0]}))[0]
     else:
-        winnerData = winnerData[0]
-        winnerSearch = 'username'
-        winnnerResSearch = 'username'
-    db.Nations.update_one({winnerSearch: winner[0]}, {'$set': {'battleRating': winnerData['battleRating'] + 25}})
-    if loserData['battleRating'] - 25 >= 0:
-        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': loserData['battleRating'] - 25, 'shield': time.time() + 86400}})
-        loserRating = loserData['battleRating'] - 25
-    if loserData['battleRating'] - 25 < 0:
-        db.Nations.update_one({loserSearch: loser[0]}, {'$set': {'battleRating': 0, 'shield': time.time() + 86400}})
+        winner_data = winner_data[0]
+    db.Nations.update_one({'_id': winner[0]}, {'$set': {'battle_rating': winner_data['battle_rating'] + battle_rating_increase}})
+    if loser_data['battle_rating'] - battle_rating_increase >= 0:
+        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battle_rating': loser_data['battle_rating'] - battle_rating_increase, 'shield': time.time() + 86400}})
+        loserRating = loser_data['battle_rating'] - battle_rating_increase
+    if loser_data['battle_rating'] - battle_rating_increase < 0:
+        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battle_rating': 0, 'shield': time.time() + 86400}})
         loserRating = 0
     #Update users Army from casualties
-    attackerArmy.pop('userID', None)
-    db.Army.update_one({'userID': winner[0]}, {'$set': winner[2]})
-    db.Army.update_one({'userID': loser[0]}, {'$set': loser[2]})
+    attacker_army.pop('_id', None)
+    db.Army.update_one({'_id': winner[0]}, {'$set': winner[2]})
+    db.Army.update_one({'_id': loser[0]}, {'$set': loser[2]})
     #Add tribute (steal 20% of resources + 3x bonus loot)
-    loserResources = list(db.Resources.find({'userID': loser[0]}))[0]
-    winnerResources = list(db.Resources.find({'userID': winner[0]}))[0]
+    loserResources = list(db.Resources.find({'_id': loser[0]}))[0]
+    winnerResources = list(db.Resources.find({'_id': winner[0]}))[0]
     resList = ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge'] #there are other fields aside from resources
     totalBonusLoot = {} #used for summary
     for resource in loserResources:
         if resource in resList:
-            amountTaken = math.ceil(loserResources[resource] * 0.1)
-            winnerResources[resource] = winnerResources[resource] + (amountTaken * 2)
+            amountTaken = math.ceil(loserResources[resource] * steal_percentage) #steal 10%
+            winnerResources[resource] = winnerResources[resource] + (amountTaken * bonus_loot_multiplier)
             loserResources[resource] = loserResources[resource] - amountTaken
-            totalBonusLoot[resource] = (amountTaken * 2)
-    db.Resources.update_one({winnnerResSearch: winner[0]}, {'$set': winnerResources})
-    db.Resources.update_one({loserResSearch: loser[0]}, {'$set': loserResources})
+            totalBonusLoot[resource] = (amountTaken)
+    db.Resources.update_one({'_id': winner[0]}, {'$set': winnerResources})
+    db.Resources.update_one({'_id': loser[0]}, {'$set': loserResources})
 
+    pprint.pprint(winner_data)
+    pprint.pprint(loser_data)
     battleSummary = {
-        'winner': winnerData['name'].upper(),
-        'loser': loserData['name'].upper(),
-        'winnerBattleRating': str(winnerData['battleRating'] + 25),
-        'loserBattleRating': str(winnerData['battleRating'] - 25),
+        'winner': winner_data['name'].upper(),
+        'loser': loser_data['name'].upper(),
+        'winner_username': '',
+        'lower_username': '',
+        'winner_battle_rating': str(winner_data['battle_rating'] + battle_rating_increase),
+        'loser_battle_rating': str(winner_data['battle_rating'] - battle_rating_increase),
         'tribute': totalBonusLoot,
-        'loserBattleRating': str(loserRating),
-        'attackerCasualties': str(attackerCasualties),
-        'defenderCasualties': str(defenderCasualties),
+        'loser_battle_rating': str(loserRating),
+        'attacker_casualties': str(attacker_casualties),
+        'defender_casualties': str(defender_casualties),
     }
     return battleSummary
 
-def validateExecuteBuy(userID, unit, numUnits):
-    data = list(db.Resources.find({'userID': userID}, {'_id': 0}))[0]
-    unitCosts = getUnitsCosts()
+def validate_execute_shop(userID, unit, numUnits):
+    data = list(db.Resources.find({'_id': userID}, {'_id': 0}))[0]
+    unit_costs = get_unit_costs()
     #Calculates the the total cost for the unit you are buying
-    for resource in unitCosts[unit]:
-        unitCosts[unit][resource] *= int(numUnits)
-    totalCost = unitCosts[unit]
+    for resource in unit_costs[unit]:
+        unit_costs[unit][resource] *= int(numUnits)
+    totalCost = unit_costs[unit]
     newResourceBalance = {}
-    print(totalCost)
     #Checks to see if you have enough resources
     for resource in totalCost:
         newResourceBalance[resource] = data[resource] - totalCost[resource]
         if data[resource] - totalCost[resource] < 0:
-            # print(data[resource] - totalCost[resource])
             return [False]
     return [True, newResourceBalance]
 
-def buyBuilding(userID, building, numBuild):
-    numBuild = int(numBuild)
-    age = getAge(userID)
-    if age == 'Medieval':
-        rateIncrease = 100
-    elif age == 'Enlightment':
-        rateIncrease = 200    
-    if age == 'Modern':
-        rateIncrease = 1000
-    if age == 'Space':
-        rateIncrease = 2000
-    resData = list(db.Resources.find({'userID': userID}, {'_id': 0}))[0]
-    nationData = list(db.Nations.find({'_id': userID}, {'_id': 0}))[0]
+def buy_building(user_id, building, num_build):
+    num_build = int(num_build)
+    age = get_age(user_id)
+    rate_increase = age_resource_rate_increases[age]
+    res_data = list(db.Resources.find({'_id': user_id}, {'_id': 0}))[0]
+    nation_data = list(db.Nations.find({'_id': user_id}, {'_id': 0}))[0]
 
-    buildingCosts = getBuildingsCosts()
+    buildingCosts = get_buildings_costs()
     cost = buildingCosts[building]
     
     for resource in cost:
-        if resData[resource] - cost[resource] * numBuild >= 0:
-            resData[resource] -= cost[resource] * numBuild
-            updateResources(userID, resData)
+        if res_data[resource] - cost[resource] * num_build >= 0:
+            res_data[resource] -= cost[resource] * num_build
+            update_resources(user_id, res_data)
         else:
             return False
-    nationData[building]['built'] = True
-    nationData[building]['numBuildings'] += numBuild
+    nation_data[building] += num_build
     if building == 'granary': 
-        resData['foodrate'] += rateIncrease * numBuild
-    if building == 'lumbermill': 
-        resData['timberrate'] += rateIncrease * numBuild
+        res_data['food_rate'] += rate_increase * num_build
+    if building == 'lumbermill' or building == 'lumber mill': 
+        res_data['timber_rate'] += rate_increase * num_build
     if building == 'quarry': 
-        resData['metalrate'] += rateIncrease * numBuild
-    if building == 'oilrig': 
-        resData['oilrate'] += rateIncrease * numBuild
+        res_data['metal_rate'] += rate_increase * num_build
+    if building == 'oilrig' or building == 'oil rig': 
+        res_data['oil_rate'] += rate_increase * num_build
     if building == 'market': 
-        resData['wealthrate'] += rateIncrease * numBuild
+        res_data['wealth_rate'] += rate_increase * num_build
     if building == 'university': 
-        resData['knowledgerate'] += rateIncrease * numBuild
-    updateBuilding(userID, building, nationData)
-    updateResourceRate(userID, resData)
+        res_data['knowledge_rate'] += rate_increase * num_build
+    update_building(user_id, building, nation_data)
+    update_resource_rate(user_id, res_data)
     return True
 
-def upgradeAge(userID):
-    userData = getUserStats(userID)
+def upgrade_age(userID):
+    userData = get_user_stats(userID)
     # pprint.pprint(userData)    
     if userData['age'] == 'Medieval':
         nextAge = 'Enlightment'
@@ -354,10 +768,33 @@ def upgradeAge(userID):
         nextAge = ''
     if nextAge == '':
         return [False, nextAge]
-    ageCosts = getAgeCosts()
+    ageCosts = get_age_costs()
     if userData['resources']['knowledge'] - ageCosts[nextAge] > 0:
         knowledgeCost = {'knowledge': userData['resources']['knowledge'] - ageCosts[nextAge]}
-        updateResources(userID, knowledgeCost)
-        updateNation(userID, {'age': nextAge})        
+        update_resources(userID, knowledgeCost)
+        update_nation(userID, {'age': nextAge})        
         return [True, nextAge]
     return [False, nextAge]
+
+"""HELPER FUNCTIONS"""
+def format_unit_info(unit, costs, rolls):
+    return (
+        f'{unit.capitalize()} - '
+        f'Costs: {costs["food"]} food, {costs["timber"]} timber | '
+        f'Rolls: {rolls["lowerbound"]}-{rolls["upperbound"]}'
+    )
+
+def display_units_in_era(era):
+    units_info = get_all_units_info()
+    formatted_output = f'===== Units Information ({era.capitalize()} Era) =====\n'
+
+    if era.lower() in units_info:
+        for unit, data in units_info[era.lower()].items():
+            formatted_output += format_unit_info(unit, data['costs'], data['rolls']) + '\n'
+    else:
+        formatted_output += f'No units available for the {era.capitalize()} Era.\n'
+
+    return formatted_output
+
+def direct_message_user():
+    pass

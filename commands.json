@@ -1,0 +1,17 @@
+{
+    "Commands" : {
+        "help" : "See Rules and List of Commands",
+        "patch": "See who you can attack, and attack other players",
+        "createnation": "Create a nation",
+        "stats": "See stats on your nation",
+        "leaderboard": "See top 10 players and your rank",
+        "claim": "Collect resources",
+        "ages": "See list of ages and their knowledge costs",
+        "nextage": "Go to the next age",
+        "shop": "See what units you can buy and specify a number to buy them",
+        "build": "See what buildings you can build and specify a number to buy them",
+        "attack": "See who you can attack, and attack other players",
+        "motto": "See who you can attack, and attack other players",
+        "event": "See who you can attack, and attack other players"
+    }
+}
