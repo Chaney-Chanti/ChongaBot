@@ -6,6 +6,8 @@ import random
 import time
 import math
 import schedule
+from datetime import datetime, timedelta
+from pytz import timezone
 from dotenv import load_dotenv
 import pprint
 
@@ -117,7 +119,7 @@ def check_attack(ctx, user_id, arg):
         #go through checks
         if len(num_args) > 1:
             return(True, f'Incorrect parameters. Format: {prefix}attack or {prefix}attack username')
-        if has_shield(user_id, time.time()):
+        if has_shield(arg, time.time()):
             return (True, 'This player has a shield, you can\'t attack them...')
         if not has_army(user_id):
             return (True, 'Stop the cap you have no army...')
@@ -154,6 +156,10 @@ def check_explore(ctx, user_id, arg):
     # if not arg.isnumeric(): #to allocate units
     #     return (True, '```You must specify a number of units to send```')
     return (False, 'OK')
+
+def check_motto(ctx, user_id, arg):
+    if len(arg) > 50:
+        return (True, '```Motto limited to 50 characters...```')
 
 def check_in_battle_rating_range(attackerID, defenderID):
     player_one_rating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battle_rating'])
@@ -416,7 +422,7 @@ def get_exploration_events():
         'modern': 20000,
         'space': 40000,
     },
-    (0.99, 1.00): { #wonder
+    (0.99, 1.01): { #wonder
         'wonder': 'wonder',
         'ancient': [],
         'medieval': [],
@@ -638,6 +644,9 @@ def update_nation(userID, data):
     db.Nations.update_one({'_id': userID}, {'$set': data}) # switches false to true and level -> 1
 
 """GAME SERVICE FUNCTIONS """
+def battle_rating_rewards():
+    pass
+
 def attackSequence(attacker_id, defender_id):
     attacker_army = list(db.Army.find({'_id': attacker_id}, {'_id': 0}))[0]
     defender_army = list(db.Army.find({'_id': defender_id}, {'_id': 0}))[0]
@@ -852,7 +861,7 @@ def explore(user_id, user_army):
         print('Your units discovered a wonder!')
         wonder = random.choice(list(get_wonder_info()[user_age].keys()))
         db.Nations.update_one({'_id': user_id}, {'$set': {'wonder': wonder}})
-        return('```Your units discovered wonder!!!\nWonder: ```' + wonder)
+        return('```Your units discovered wonder!!!\nWonder: ' + format_wonder_name(wonder) + '```')
         
 def validate_execute_shop(userID, unit, numUnits):
     data = list(db.Resources.find({'_id': userID}, {'_id': 0}))[0]

@@ -37,12 +37,12 @@ async def on_ready():
 
 @client.command(name='help', aliases=['Help', 'HELP'], description='See list of commands')
 async def help(ctx):
-    embed = nextcord.Embed(title="c!help", description='help command for if you are acoustic')
+    embed = nextcord.Embed(title=f"{prefix}help", description='help command for if you are acoustic')
     for command in client.walk_commands():
         description = command.description
         if not description or description is None or description ==  '':
             description = 'No Description Provided'
-        embed.add_field(name=f'`d!{command.name}{command.signature if command.signature is not None else ""}`', value=description)
+        embed.add_field(name=f'`{prefix}{command.name}{command.signature if command.signature is not None else ""}`', value=description)
     await ctx.send(embed=embed)
 
 @client.command(name='createnation', aliases=['CREATENATION', 'CreateNation', 'Createnation'], description='Create your nation, MUST BE ALL ONE WORD!')
@@ -80,7 +80,7 @@ async def stats(ctx, arg=None):
         embed.add_field(name="Leader", value=data['username'], inline=True)
         embed.add_field(name="Age", value=data['age'], inline=True)
         embed.add_field(name="Motto", value=data['motto'], inline=True)
-        embed.add_field(name="Wonder", value=data['wonder'], inline=True)
+        embed.add_field(name="Wonder", value=utils.format_wonder_name(data['wonder']), inline=True)
         embed.add_field(name="Alliance", value='coming soon...', inline=True)
         embed.add_field(name="Battle Rating", value=data['battle_rating'], inline=True)
         embed.add_field(name="Remaining Shield Time",
@@ -281,7 +281,6 @@ async def next_age(ctx):
 async def attack(ctx, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
     error, response = utils.check_attack(ctx, user_id, arg)
-
     if error:
         await ctx.send(response)
     elif not arg:
@@ -324,6 +323,9 @@ async def attack(ctx, arg=None):
 async def set_motto(ctx, *, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
     user_stats = utils.get_user_stats(user_id)
+    error, response = utils.check_motto(ctx, user_id, arg)
+    if error:
+        await ctx.send(response)
 
     if arg:
         user_stats['motto'] = arg
