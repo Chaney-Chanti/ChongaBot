@@ -71,9 +71,7 @@ async def stats(ctx, arg=None):
         data = utils.get_user_stats(response)
         army_data = utils.get_user_army(response)
         # Calculate remaining shield time
-        now = datetime.datetime.utcnow()
-        remaining_shield_time = max(0, (data['shield'] - now.timestamp()))
-
+        remaining_shield_time = max(0, (data['shield'] - time.time()))
         # Create the embed
         embed = nextcord.Embed(title=f"======= {data['name']} =======", color=0x00ff00)
         embed.add_field(name="Leader", value=data['username'], inline=True)
@@ -194,7 +192,7 @@ async def claim(ctx, arg=None):
             title='Already Claimed Within the Hour',
             description=(
                 f'You have already claimed within the hour. Please wait another hour.\n'
-                f'Next Claim in: {remaining_hours} hours, {remaining_minutes} minutes, {remaining_seconds} seconds'
+                f'Next Claim in: {remaining_hours} hours, {remaining_minutes} minutes, {int(remaining_seconds)} seconds'
             ),
             color=0xff0000  # Set the color of the embed as needed
         )
@@ -204,7 +202,7 @@ async def claim(ctx, arg=None):
 @client.command(name='shop', aliases=['Shop', 'SHOP'], description='See unit prices and purchase unit')
 async def shop(ctx, arg1=None, arg2=None):
     user_id, server_id, username = utils.get_message_info(ctx)
-    error, response = utils.check_shop(user_id, arg1)
+    error, response = utils.check_shop(user_id, arg1, arg2)
     
     if error:
         embed = nextcord.Embed(description=response, color=0xff0000)
@@ -229,6 +227,7 @@ async def shop(ctx, arg1=None, arg2=None):
             if not resource_cost[0]:
                 embed = nextcord.Embed(description='You must construct additional pylons (not enough resources)', color=0xff0000)
                 await ctx.send(embed=embed)
+                return
             utils.update_resources(user_id, resource_cost[1])
             utils.update_units(user_id, unit, num_units)
             embed = nextcord.Embed(description=f'```Successfully bought {num_units} {unit}s```', color=0x00ff00)

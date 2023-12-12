@@ -84,7 +84,7 @@ def check_claim(userID):
         return(True, 'User does not exist')
     return(False, 'OK')
 
-def check_shop(userID, arg):
+def check_shop(userID, arg, arg2):
     #get number of arguments
     if arg != None:
         arg = arg.lower()
@@ -95,6 +95,8 @@ def check_shop(userID, arg):
             return(True, f'Incorrect parameters. Format: {prefix}shop or {prefix}shop unit number')
         if arg not in get_all_units():
             return(True, 'Unit does not exist')
+        if int(arg2) <= 0:
+            return(True, 'You must specify a positive number of units')
     return (False, 'OK')
 
 def check_build(userID, arg1, arg2):
@@ -152,9 +154,13 @@ def check_explore(ctx, user_id, arg):
     user_stats = get_user_stats(user_id)
     current_time = time.time()
     time_passed_hours = (current_time - user_stats['last_explore']) / 3600
-    if time_passed_hours <= 1:
-        return (True, '```You have already explored. Try again in an hour...```')
-    if user_army['explorer'] <= 0 and user_army['caravan'] <= 0 and user_army['conquistadand'] <= 0 and user_army['cargoship'] <= 0 and user_army['tradeship'] <= 0:
+    if time_passed_hours <= 6:
+        time_remaining_seconds = 3600 - (current_time - user_stats['last_explore']) % 3600
+        # Convert time remaining to hours, minutes, and seconds
+        remaining_hours, remaining_seconds = divmod(time_remaining_seconds, 3600)
+        remaining_minutes, remaining_seconds = divmod(remaining_seconds, 60)
+        return (True, f'```Next Claim in: {remaining_hours} hours, {remaining_minutes} minutes, {int(remaining_seconds)} seconds```')
+    if user_army['explorer'] <= 0 and user_army['caravan'] <= 0 and user_army['conquistador'] <= 0 and user_army['cargoship'] <= 0 and user_army['tradeship'] <= 0:
         return (True, '```You do not have any exploration units```')
     # if not arg.isnumeric(): #to allocate units
     #     return (True, '```You must specify a number of units to send```')
@@ -257,7 +263,7 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 1, 'upperbound': 50, },
             },
             'explorer': { 
-                'costs': {'food': 100},
+                'costs': {'food': 1000},
                 'rolls': {'lowerbound': 1, 'upperbound': 5, },
             },
         },
@@ -287,7 +293,7 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 30, 'upperbound': 100, },
             },
             'caravan': { 
-                'costs': {'food': 200},
+                'costs': {'food': 1500},
                 'rolls': {'lowerbound': 1, 'upperbound': 10, },
             },
         },
@@ -313,7 +319,7 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 100, 'upperbound': 800, },
             },
             'conquistador': { 
-                'costs': {'food': 400,},
+                'costs': {'food': 2000,},
                 'rolls': {'lowerbound': 10, 'upperbound': 20, },
             },
         },
@@ -351,7 +357,7 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 1500, 'upperbound': 4000, },
             },
             'spy': { 
-                'costs': {'food': 800,},
+                'costs': {'food': 4000,},
                 'rolls': {'lowerbound': 10, 'upperbound': 20, },
             },
         },
@@ -381,7 +387,7 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 40000, 'upperbound': 100000, },
             },
                'tradeship': { 
-                'costs': {'metal': 5000, 'wealth': 5000, 'oil': 5000},
+                'costs': {'food': 5000, 'metal': 5000, 'wealth': 5000, 'oil': 5000},
                 'rolls': {'lowerbound': 50, 'upperbound': 100, },
             },
         },
@@ -867,6 +873,7 @@ def explore(user_id, user_army):
     elif(event).get('wonder') is not None:
         print('Your units discovered a wonder!')
         wonder = random.choice(list(get_wonder_info()[user_age].keys()))
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
         db.Nations.update_one({'_id': user_id}, {'$set': {'wonder': wonder}})
         return('```Your units discovered wonder!!!\nWonder: ' + format_wonder_name(wonder) + '```')
         
