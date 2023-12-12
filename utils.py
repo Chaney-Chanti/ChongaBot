@@ -116,23 +116,24 @@ def check_build(userID, arg1, arg2):
 def check_attack(ctx, user_id, arg):
     if arg != None: #only player is @ and username
         num_args = arg.split()
-        #go through checks
         if len(num_args) > 1:
             return(True, f'Incorrect parameters. Format: {prefix}attack or {prefix}attack username')
-        if has_shield(arg, time.time()):
+        if len(ctx.message.mentions) == 1:
+            target_id = ctx.message.mentions[0].id
+        else:
+            target_id = get_user_id_from_username(arg)
+        #go through checks
+        if has_shield(target_id, time.time()):
             return (True, 'This player has a shield, you can\'t attack them...')
         if not has_army(user_id):
             return (True, 'Stop the cap you have no army...')
-        if len(ctx.message.mentions) == 1:
-            target_id = ctx.message.mentions[0].id
-            if ctx.message.author.id == user_id:
-                return (True, 'You cannot attack yourself...')
-            if not player_exists_via_id(target_id):
-                return (True, 'User does not exist idiot!')
-            if not check_in_battle_rating_range(user_id, target_id):
-                # battle_rating_range = data.get('battle_rating_range')
-                return (True, f'Your battle rating is either to high or to low (+-{battle_rating_range})')
-            return (False, target_id)
+        if ctx.message.author.id == arg:
+            return (True, 'You cannot attack yourself...')
+        if not player_exists_via_id(target_id):
+            return (True, 'User does not exist idiot!')
+        if not check_in_battle_rating_range(user_id, target_id):
+            # battle_rating_range = data.get('battle_rating_range')
+            return (True, f'Your battle rating is either to high or to low (+-{battle_rating_range})')
         else:
             if not player_exists_via_username(arg):
                 return (True, 'User does not exist idiot!')
