@@ -660,6 +660,7 @@ def attackSequence(attacker_id, defender_id):
     defender_army = list(db.Army.find({'_id': defender_id}, {'_id': 0}))[0]
     attacker_stats = get_user_stats(attacker_id)
     defender_stats = get_user_stats(defender_id)
+
     #This is to not let add defense units to attackers force
     non_combat_units = ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']
     for unit in non_combat_units:
@@ -672,13 +673,17 @@ def attackSequence(attacker_id, defender_id):
     attacker_casualties = {}
     defender_casualties = {}
     i = j = 2 # i think im trying to skip user info and go straight to army data
+    #by default set attacker to winner in the case the defender has no army
+    winner = [attacker_id, attacker_casualties, attacker_army]
+    loser = [defender_id, defender_casualties, defender_army]
+    
     while i < len(attacker_army_key_list) and j < len(defender_army_key_list):      
         attacker_unit_count = attacker_army[attacker_army_key_list[i]]
         defender_unit_count = defender_army[defender_army_key_list[j]]
         # print('DEBUG', 'ATTACKER_UNIT_COUNT:', attacker_unit_count, 'DEFENDER_UNIT_COUNT', defender_unit_count)
         if attacker_unit_count == 0: #attacker has no units left, for the specific unit
             i += 1 #move to next unit in the list
-        if defender_unit_count == 0: #defender has no units left, for the specific unit
+        elif defender_unit_count == 0: #defender has no units left, for the specific unit
             j += 1 #move to next unit in the list
         else: #combat simulation
             attackerRoll = random.randint(unit_dice_rolls[attacker_army_key_list[i]]['lowerbound'], unit_dice_rolls[attacker_army_key_list[i]]['upperbound'])
