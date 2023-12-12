@@ -5,11 +5,13 @@ class CreateNation:
         self.username = username
 
         self.name = name
-        self.age = 'stone'
+        self.age = 'ancient'
         self.battle_rating = 0    
         self.shield = 0
         self.last_explore = 0
         self.last_event = 0 
+        self.num_wins = 0
+        self.num_losses = 0
         self.wonder = ''
         self.owned_wonders = [] #can roll for wonders for bonuses
         self.motto = '' #used as a message for when you attack people

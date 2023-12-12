@@ -5,8 +5,9 @@ import os
 import random
 import time
 import math
-import pprint
+import schedule
 from dotenv import load_dotenv
+import pprint
 
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
@@ -20,24 +21,25 @@ prefix = 'c!'
 """SETTINGS"""
 battle_rating_range = 200
 age_resource_rate_increases = {
-    'stone': 100,
+    'ancient': 100,
     'medieval': 200,
     'enlightment': 500,
     'modern': 1000,
     'space': 1500
 }
 steal_percentage = 0.1
-bonus_loot_multiplier = 2
+bonus_loot_multiplier = 3
 battle_rating_increase = 25
 random.seed(a=None)
 big_loot_bonus = 3
-unit_capacities = {
+unit_capacities = { # probably move this into the units info section
     'explorer': 500,
     'caravan': 1000,
     'conquistador': 2000,
-    'cargoship': 5000,
+    'spy': 5000,
     'tradeship': 10000,
 }
+shield_length = 86400 #1 day shield
 
 """BOOLEAN CHECK FUNCTIONS"""
 def check_nation_exists(user_id):
@@ -83,19 +85,21 @@ def check_claim(userID):
 def check_shop(userID, arg):
     #get number of arguments
     if arg != None:
+        arg = arg.lower()
         num_args = arg.split()
         if not check_nation_exists(userID):
             return (True, 'User does not exist idiot!')
         if len(num_args) > 2:
             return(True, f'Incorrect parameters. Format: {prefix}shop or {prefix}shop unit number')
         if arg not in get_all_units():
-            print(arg, get_all_units)
             return(True, 'Unit does not exist')
     return (False, 'OK')
 
 def check_build(userID, arg1, arg2):
     buildings = get_buildings()
     if arg1 != None and arg2 != None:
+        arg1 = arg1.lower()
+        arg2 = arg2.lower()
         num_args = arg1.split()
         if not check_nation_exists(userID):
             return (True, 'User does not exist idiot!')
@@ -147,7 +151,7 @@ def check_explore(ctx, user_id, arg):
         return (True, '```You have already explored. Try again in an hour...```')
     if user_army['explorer'] <= 0 and user_army['caravan'] <= 0 and user_army['conquistadand'] <= 0 and user_army['cargoship'] <= 0 and user_army['tradeship'] <= 0:
         return (True, '```You do not have any exploration units```')
-    # if not arg.isnumeric():
+    # if not arg.isnumeric(): #to allocate units
     #     return (True, '```You must specify a number of units to send```')
     return (False, 'OK')
 
@@ -217,9 +221,9 @@ def get_unit_names_by_age(age):
 
 def get_all_units_info():
     return {
-        'stone': {
+        'ancient': {
             'slinger': { 
-                'costs': {'food': 100, 'timber': 100, },
+                'costs': {'food': 200},
                 'rolls': {'lowerbound': 1, 'upperbound': 10, },
             },
             'clubman': { 
@@ -227,145 +231,144 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 1, 'upperbound': 10, },
             },
             'spearman': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 200, 'timber': 200, },
+                'rolls': {'lowerbound': 1, 'upperbound': 15, },
             },
             'archer': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 300, 'timber': 300, },
+                'rolls': {'lowerbound': 1, 'upperbound': 20, },
             },
             'keep': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'timber': 500, },
+                'rolls': {'lowerbound': 1, 'upperbound': 50, },
             },
             'explorer': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 100},
+                'rolls': {'lowerbound': 1, 'upperbound': 5, },
             },
         },
         'medieval': {
             'knight': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 400, 'metal': 400, },
+                'rolls': {'lowerbound': 10, 'upperbound': 20, },
             },
             'crossbowman': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 400, 'timber': 500, },
+                'rolls': {'lowerbound': 10, 'upperbound': 30, },
             },
             'cavalry': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 500, 'metal': 500, },
+                'rolls': {'lowerbound': 10, 'upperbound': 35, },
             },
             'trebuchet': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'timber': 600, 'metal': 600, },
+                'rolls': {'lowerbound': 10, 'upperbound': 45, },
             },
             'war_elephant': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 800, 'timber': 800, },
+                'rolls': {'lowerbound': 20, 'upperbound': 80, },
             },
             'castle': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 1000, 'timber': 1000, 'metal': 1000, 'wealth': 1000},
+                'rolls': {'lowerbound': 30, 'upperbound': 100, },
             },
             'caravan': { 
-                'costs': {'food': 100, 'timber': 100, },
+                'costs': {'food': 200},
                 'rolls': {'lowerbound': 1, 'upperbound': 10, },
             },
         },
         'enlightment': {
             'minutemen':{ 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 1000, 'metal': 500, },
+                'rolls': {'lowerbound': 20, 'upperbound': 40, },
             },
             'general': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 1500},
+                'rolls': {'lowerbound': 20, 'upperbound': 50, },
             },
             'cannon': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'timber': 1200, 'metal': 1200, },
+                'rolls': {'lowerbound': 30, 'upperbound': 90, },
             },
             'armada': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'timber': 10000, 'metal': 10000, 'wealth': 10000 },
+                'rolls': {'lowerbound': 80, 'upperbound': 200, },
             },
             'fortress': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 20000, 'timber': 20000, 'metal': 20000, 'wealth': 20000},
+                'rolls': {'lowerbound': 100, 'upperbound': 800, },
             },
             'conquistador': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 400,},
+                'rolls': {'lowerbound': 10, 'upperbound': 20, },
             },
         },
         'modern': {
             'infantry': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 2000, 'metal': 1000, 'wealth': 500},
+                'rolls': {'lowerbound': 40, 'upperbound': 60, },
             },
             'tank': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 5000, 'wealth': 5000, 'oil': 5000},
+                'rolls': {'lowerbound': 100, 'upperbound': 200, },
             },
             'fighter': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 6000, 'wealth': 6000, 'oil': 6000},
+                'rolls': {'lowerbound': 100, 'upperbound': 250, },
             },
             'bomber': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 8000, 'wealth': 8000, 'oil': 8000},
+                'rolls': {'lowerbound': 120, 'upperbound': 270, },
             },
             'battleship': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 10000, 'wealth': 10000, 'oil': 10000},
+                'rolls': {'lowerbound': 200, 'upperbound': 400, },
             },
             'aircraft_carrier': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 20000, 'wealth': 20000, 'oil': 20000},
+                'rolls': {'lowerbound': 500, 'upperbound': 1000, },
             },
             'icbm': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 50000, 'wealth': 50000, 'oil': 50000},
+                'rolls': {'lowerbound': 1000, 'upperbound': 2000, },
             },
             'bunker': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 100000, 'wealth': 100000, 'oil': 100000},
+                'rolls': {'lowerbound': 1500, 'upperbound': 4000, },
             },
-            'cargoship': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+            'spy': { 
+                'costs': {'food': 800,},
+                'rolls': {'lowerbound': 10, 'upperbound': 20, },
             },
-
         },
         'space' : {
             'shocktrooper': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 6000, 'metal': 6000, 'wealth': 6000},
+                'rolls': {'lowerbound': 100, 'upperbound': 250, },
             },
             'lasercannon': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 10000, 'wealth': 10000, 'oil': 10000},
+                'rolls': {'lowerbound': 250, 'upperbound': 450, },
             },
             'starfighter': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 50000, 'wealth': 50000, 'oil': 50000},
+                'rolls': {'lowerbound': 750, 'upperbound': 1500, },
             },
             'battlecruiser': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 500000, 'wealth': 500000, 'oil': 500000},
+                'rolls': {'lowerbound': 5000, 'upperbound': 10000, },
             },
             'deathstar': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 5000000, 'wealth': 5000000, 'oil': 5000000},
+                'rolls': {'lowerbound': 20000, 'upperbound': 50000, },
             },
                'planetary_fortress': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 100000, 'wealth': 100000, 'oil': 100000},
+                'rolls': {'lowerbound': 40000, 'upperbound': 100000, },
             },
                'tradeship': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'metal': 5000, 'wealth': 5000, 'oil': 5000},
+                'rolls': {'lowerbound': 50, 'upperbound': 100, },
             },
         },
     }
@@ -377,7 +380,7 @@ def get_exploration_events():
   return {
     (0.00, 0.35): { #free resources
         'free_resources': 'free_resources',
-        'stone': 1000,
+        'ancient': 1000,
         'medieval': 5000,
         'enlightenment': 10000,
         'modern': 20000,
@@ -385,15 +388,15 @@ def get_exploration_events():
     },
     (0.35, 0.70): { #free units
         'free_units': 'free_units',
-        'stone': get_unit_names_by_age('stone'),
+        'ancient': get_unit_names_by_age('ancient'),
         'medieval': get_unit_names_by_age('medieval'),
         'enlightenment': get_unit_names_by_age('enlightment'),
         'modern': get_unit_names_by_age('modern'),
         'space': get_unit_names_by_age('space'),
     },
-    (0.70, 0.90): { #trade route
+    (0.70, 0.90): { #resource rate increases
         'trade_route': 'trade_route',
-        'stone': 100,
+        'ancient': 100,
         'medieval': 200,
         'enlightenment': 500,
         'modern': 1000,
@@ -407,7 +410,7 @@ def get_exploration_events():
     },
     (0.96, 0.99): { #big_loot
         'big_loot': 'big_loot',
-        'stone': 1000,
+        'ancient': 1000,
         'medieval': 5000,
         'enlightenment': 10000,
         'modern': 20000,
@@ -415,105 +418,13 @@ def get_exploration_events():
     },
     (0.99, 1.00): { #wonder
         'wonder': 'wonder',
-        'stone': [],
+        'ancient': [],
         'medieval': [],
         'enlightenment': [],
         'modern': [],
         'space': [],
     },
 }
-
-def explore(user_id, user_army):
-    data = get_user_stats(user_id)
-    user_age = get_age(user_id)
-    explorer_units = ['explorer', 'caravan', 'conquistador', 'spy', 'cargoship', 'tradeship']
-    users_explorer_units = {key: user_army[key] for key in explorer_units if key in user_army}
-    event_chance = round(random.uniform(0, 1), 2) #generate random float between 0 and 1 (inclusive) with decimals to 2 places
-    #find which event occurred
-    for (lowerbound, upperbound), event in get_exploration_events().items():
-        if lowerbound <= event_chance < upperbound:
-            break
-    if(event).get('free_resources') is not None:
-        resources_gained = event[user_age]
-        updated_resources = {}  # Initialize an empty dictionary to store the updated values
-
-        for unit in users_explorer_units:
-            num_units = user_army[unit]  # results in the number of units
-            # Iterate over each resource and update it in a cumulative manner
-            for resource in ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']:
-                resource_key = resource  # Key in the data dictionary
-                updated_resources[resource_key] = data['resources'][resource_key] + (resources_gained * unit_capacities[unit])
-                # Update the data dictionary with the new value
-                data['resources'][resource_key] = updated_resources[resource_key]
-
-        update_resources(user_id, updated_resources)
-        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
-        return('```Your units befriended a nearby nation whom brough back gifts!\n' 
-               + str(updated_resources[resource_key]) + ' (of every resource)```')
-    elif(event).get('free_units') is not None:
-        users_available_units = event[user_age]
-
-        non_combat_units = ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']
-        start_index = users_available_units.index(non_combat_units[0])
-        end_index = start_index + len(non_combat_units)
-        # Remove the sublist using slicing
-        result_list = users_available_units[:start_index] + users_available_units[end_index:]
-
-        num_units = random.randint(3,7)
-        random_unit = random.choice(result_list)
-        # pprint.pprint(user_army)
-        user_army[random_unit] += num_units
-        db.Army.update_one({'_id': user_id}, {'$set': user_army})
-        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
-        return('```Your units recruited some mercenaries!' 
-               + '\nRecruited: ' + str(num_units) + ' ' + str(random_unit) + 's```')
-    elif(event).get('trade_route') is not None:
-        resource_rate_gain = event[user_age]
-        updated_resources_rates = {
-            'food_rate': data['resources']['food_rate'] + resource_rate_gain,
-            'timber_rate': data['resources']['timber_rate'] + resource_rate_gain,
-            'metal_rate': data['resources']['metal_rate'] + resource_rate_gain,
-            'wealth_rate': data['resources']['wealth_rate'] + resource_rate_gain,
-            'oil_rate': data['resources']['oil_rate'] + resource_rate_gain,
-            'knowledge_rate': data['resources']['knowledge_rate'] + resource_rate_gain,
-        }
-        
-        update_resources(user_id, updated_resources_rates)
-        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
-        return('```Your units discovered a trade route with China!\n' 
-               + 'resource rate increased by ' + str(resource_rate_gain) + '```')
-    elif(event).get('tough_journey') is not None:
-        for unit in explorer_units:
-            user_army[unit] = math.floor(user_army[unit]/2)
-        db.Army.update_one({'_id': user_id}, {'$set': user_army})
-        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
-        return('```You exploration units had a tough journey... you lost half your men\n' 
-               + 'Casualties: ' + str(math.floor(user_army[unit]/2)) + '```')
-    elif(event).get('pirates') is not None:
-        for unit in explorer_units:
-            user_army[unit] = 0
-        db.Army.update_one({'_id': user_id}, {'$set': user_army})
-        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
-        return('You were attacked by pirates, all your units died')
-    elif(event).get('big_loot') is not None:
-        resources_gained = event[user_age]
-        updated_resources = {}  # Initialize an empty dictionary to store the updated values
-
-        for unit in users_explorer_units:
-            num_units = user_army[unit]  # results in the number of units
-            # Iterate over each resource and update it in a cumulative manner
-            for resource in ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']:
-                resource_key = resource  # Key in the data dictionary
-                updated_resources[resource_key] = data['resources'][resource_key] + ((resources_gained * big_loot_bonus) * unit_capacities[unit])
-                # Update the data dictionary with the new value
-                data['resources'][resource_key] = updated_resources[resource_key]
-        update_resources(user_id, updated_resources)
-        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
-        return('```Your units conquered a small nation and brought back tribute!\n' +
-               'Collected: ' + str(updated_resources[resource_key]) + ' (every resource)```')
-    elif(event).get('wonder') is not None:
-        print('Your units discovered a wonder!')
-        # pprint.pprint(user_stats)
 
 def get_users_available_units(age): # maybe make a for loop and loop through unit costs or dice rolls
     all_unit_info = get_all_units_info()
@@ -589,13 +500,118 @@ def get_buildings_costs():
 
 def get_age_costs():
     ageCosts = {
-        'medival': 100000,
+        'medival': 200000,
         'englightment': 500000,
         'modern': 1000000,
         'space': 2000000,
     }
     return ageCosts
 
+def get_wonder_info():
+    return {
+        'ancient': {
+            # 'pyramids': {
+            #     'desc': 'increase'
+            # },
+            # 'colossus': {
+            #     'desc': 'increase'
+            # },
+            'hanging_gardens': {
+                'desc': 'increase food production by 1.25x',
+                'bonus': 1.25,
+            },
+            # 'machu_picchu': {
+            #     'desc': 'increase'
+            # },
+            # 'temple_of_zeus': {
+            #     'desc': 'increase'
+            # },
+            'the_great_wall_of_chonga': {
+                'desc': 'increase rolls for defense units by 1.25x',
+                'bonus': 1.25,
+            }
+        },
+        'medieval': {
+            'terra_cotta_army': {
+                 'desc': 'buy one get one free unit',
+                 'bonus': 1
+            },
+            'colloseum': {
+                 'desc': 'increase unit rolls by 1.25x (not defense units)',
+                 'bonus': 1.25,
+            },
+            'the_black_forest': {
+                 'desc': 'increase timber production by 1.25x',
+                 'bonus': 1.25,
+            },
+            # 'forbidden_city_of_chonga': {
+            #      'desc': 'increase'
+            # },
+        },
+        'enlightment': {
+            'palace_of_versailles': {
+                'desc': 'increase knowledge production by 1.25x',
+                'bonus': 1.25,
+            },
+            'the_chongalayas': {
+                'desc': 'increase metal production by 1.25x',
+                'bonus': 1.25,
+            },
+            # 'taj_mahal': {
+            #     'desc': 'increase'
+            # },
+        },
+        'modern': {
+            'the_rivers_of_chonga': {
+                'desc': 'increase wealth production by 1.25x',
+                'bonus': 1.25,
+            },
+            'supercollider': {
+                'desc': 'if attacked by icbm, reduce roll by 75%',
+                'bonus': .25,
+            },
+            'the_oil_fields_of_chonga': {
+                'desc': 'increase oil production by 1.25x',
+                'bonus': 1.25,
+            },
+            # 'eiffel_tower': {
+            #     'desc': 'increase'
+            # },
+            # 'empire_state_building': {
+            #     'desc': 'increase'
+            # },
+            # 'birj_khalifa': {
+            #     'desc': 'increase'
+            # },
+            # 'big_ben': {
+            #     'desc': 'increase'
+            # },
+        },
+        'space':{
+            # 'nebula_of_visions': {
+            #     'desc': 'increase'
+            # },
+            # 'the_answer_to_infinity': {
+            #     'desc': 'increase'
+            # },
+            'white_hole': {
+                'desc': 'get 1.25x resources per claim',
+                'bonus': 1.25,
+            },
+            'galatic_empire': {
+                'desc': 'increase collection rate by 10000 of every resource',
+                'bonus': 10000,
+            },
+        },
+    }
+
+#returns a list of all the wonders
+def get_wonder_list():
+    wonders_list = []
+    wonders_data = get_wonder_info()
+    for age, wonders in wonders_data.items():
+        wonders_list.extend(wonders.keys())
+    return wonders_list
 
 def get_num_users():
     return db.Nations.count_documents({})
@@ -625,7 +641,8 @@ def update_nation(userID, data):
 def attackSequence(attacker_id, defender_id):
     attacker_army = list(db.Army.find({'_id': attacker_id}, {'_id': 0}))[0]
     defender_army = list(db.Army.find({'_id': defender_id}, {'_id': 0}))[0]
-    
+    attacker_stats = get_user_stats(attacker_id)
+    defender_stats = get_user_stats(defender_id)
     #This is to not let add defense units to attackers force
     non_combat_units = ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']
     for unit in non_combat_units:
@@ -643,8 +660,6 @@ def attackSequence(attacker_id, defender_id):
         defender_unit_count = defender_army[defender_army_key_list[j]]
         # print('DEBUG', 'ATTACKER_UNIT_COUNT:', attacker_unit_count, 'DEFENDER_UNIT_COUNT', defender_unit_count)
         if attacker_unit_count == 0: #attacker has no units left, for the specific unit
-            print('attacker unit', attacker_army_key_list[i])
-            print('defender unit', defender_army_key_list[j])
             i += 1 #move to next unit in the list
             winner = [defender_id, defender_casualties, defender_army]
             loser = [attacker_id, attacker_casualties, attacker_army]
@@ -655,6 +670,21 @@ def attackSequence(attacker_id, defender_id):
         else: #combat simulation
             attackerRoll = random.randint(unit_dice_rolls[attacker_army_key_list[i]]['lowerbound'], unit_dice_rolls[attacker_army_key_list[i]]['upperbound'])
             defenderRoll = random.randint(unit_dice_rolls[defender_army_key_list[j]]['lowerbound'], unit_dice_rolls[defender_army_key_list[j]]['upperbound'])
+
+            #roll processing
+            if attacker_stats['wonder'] == 'colloseum' and unit_dice_rolls[attacker_army_key_list[i]] not in ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']:
+                attackerRoll *= 1.25
+            if defender_stats['wonder'] == 'colloseum' and unit_dice_rolls[attacker_army_key_list[i]] not in ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']:
+                defenderRoll *= 1.25
+            if attacker_stats['wonder'] == 'the_great_wall_of_chonga' and unit_dice_rolls[attacker_army_key_list[i]] in ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']:
+                attackerRoll *= 1.25
+            if defender_stats['wonder'] == 'the_great_wall_of_chonga' and unit_dice_rolls[attacker_army_key_list[i]] in ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']:
+                defenderRoll *= 1.25
+            if attacker_stats['wonder'] == 'supercollider' and unit_dice_rolls[attacker_army_key_list[i]] == 'icbm':
+                defenderRoll *= .25
+            if defender_stats['wonder'] == 'supercollider' and unit_dice_rolls[attacker_army_key_list[i]] == 'icbm':
+                attackerRoll *= .25
+
             if attackerRoll > defenderRoll:
                 #update casualties
                 if defender_army_key_list[j] in defender_casualties:
@@ -691,10 +721,10 @@ def attackSequence(attacker_id, defender_id):
         winner_data = winner_data[0]
     db.Nations.update_one({'_id': winner[0]}, {'$set': {'battle_rating': winner_data['battle_rating'] + battle_rating_increase}})
     if loser_data['battle_rating'] - battle_rating_increase >= 0:
-        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battle_rating': loser_data['battle_rating'] - battle_rating_increase, 'shield': time.time() + 86400}})
+        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battle_rating': loser_data['battle_rating'] - battle_rating_increase, 'shield': time.time() + shield_length}})
         loserRating = loser_data['battle_rating'] - battle_rating_increase
     if loser_data['battle_rating'] - battle_rating_increase < 0:
-        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battle_rating': 0, 'shield': time.time() + 86400}})
+        db.Nations.update_one({'_id': loser[0]}, {'$set': {'battle_rating': 0, 'shield': time.time() + shield_length}})
         loserRating = 0
     #Update users Army from casualties
     attacker_army.pop('_id', None)
@@ -714,8 +744,6 @@ def attackSequence(attacker_id, defender_id):
     db.Resources.update_one({'_id': winner[0]}, {'$set': winnerResources})
     db.Resources.update_one({'_id': loser[0]}, {'$set': loserResources})
 
-    pprint.pprint(winner_data)
-    pprint.pprint(loser_data)
     battleSummary = {
         'winner': winner_data['name'].upper(),
         'loser': loser_data['name'].upper(),
@@ -731,6 +759,101 @@ def attackSequence(attacker_id, defender_id):
     }
     return battleSummary
 
+def explore(user_id, user_army):
+    data = get_user_stats(user_id)
+    user_age = get_age(user_id)
+    explorer_units = ['explorer', 'caravan', 'conquistador', 'spy', 'tradeship']
+    users_explorer_units = {key: user_army[key] for key in explorer_units if key in user_army}
+    event_chance = round(random.uniform(0, 1), 2) #generate random float between 0 and 1 (inclusive) with decimals to 2 places
+    #find which event occurred
+    for (lowerbound, upperbound), event in get_exploration_events().items():
+        if lowerbound <= event_chance < upperbound:
+            break
+    if(event).get('free_resources') is not None:
+        resources_gained = event[user_age]
+        updated_resources = {}  # Initialize an empty dictionary to store the updated values
+
+        num_units = 0
+        for unit in users_explorer_units:
+            num_units += user_army[unit]  # results in the number of units for each explorer unit
+        # Iterate over each resource and update it in a cumulative manner
+        for resource in ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']:
+            resource_key = resource  # Key in the data dictionary
+            updated_resources[resource_key] = data['resources'][resource_key] + (resources_gained * num_units)
+            # Update the data dictionary with the new value
+            data['resources'][resource_key] = updated_resources[resource_key]
+
+        update_resources(user_id, updated_resources)
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```Your units befriended a nearby nation whom brough back gifts!\n' 
+               + str(resources_gained * num_units) + ' (of every resource)```')
+    elif(event).get('free_units') is not None:
+        users_available_units = event[user_age]
+
+        non_combat_units = ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']
+        start_index = users_available_units.index(non_combat_units[0])
+        end_index = start_index + len(non_combat_units)
+        # Remove the sublist using slicing
+        result_list = users_available_units[:start_index] + users_available_units[end_index:]
+
+        num_units = random.randint(3,7)
+        random_unit = random.choice(result_list)
+        # pprint.pprint(user_army)
+        user_army[random_unit] += num_units
+        db.Army.update_one({'_id': user_id}, {'$set': user_army})
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```Your units recruited some mercenaries!' 
+               + '\nRecruited: ' + str(num_units) + ' ' + str(random_unit) + 's```')
+    elif(event).get('trade_route') is not None:
+        resource_rate_gain = event[user_age]
+        updated_resources_rates = {
+            'food_rate': data['resources']['food_rate'] + resource_rate_gain,
+            'timber_rate': data['resources']['timber_rate'] + resource_rate_gain,
+            'metal_rate': data['resources']['metal_rate'] + resource_rate_gain,
+            'wealth_rate': data['resources']['wealth_rate'] + resource_rate_gain,
+            'oil_rate': data['resources']['oil_rate'] + resource_rate_gain,
+            'knowledge_rate': data['resources']['knowledge_rate'] + resource_rate_gain,
+        }
+        
+        update_resources(user_id, updated_resources_rates)
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```Your units discovered a trade route with China!\n' 
+               + 'resource rate increased by ' + str(resource_rate_gain) + '```')
+    elif(event).get('tough_journey') is not None:
+        for unit in explorer_units:
+            user_army[unit] = math.floor(user_army[unit]/2)
+        db.Army.update_one({'_id': user_id}, {'$set': user_army})
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```You exploration units had a tough journey... you lost half your men\n' 
+               + 'Casualties: ' + str(math.floor(user_army[unit]/2)) + '```')
+    elif(event).get('pirates') is not None:
+        for unit in explorer_units:
+            user_army[unit] = 0
+        db.Army.update_one({'_id': user_id}, {'$set': user_army})
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('You were attacked by pirates, all your units died')
+    elif(event).get('big_loot') is not None:
+        resources_gained = event[user_age]
+        updated_resources = {}  # Initialize an empty dictionary to store the updated values
+        num_units = 0
+        for unit in users_explorer_units:
+            num_units += user_army[unit]  # results in the number of units
+            # Iterate over each resource and update it in a cumulative manner
+        for resource in ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']:
+            resource_key = resource  # Key in the data dictionary
+            updated_resources[resource_key] = data['resources'][resource_key] + ((resources_gained * big_loot_bonus) * num_units)
+            # Update the data dictionary with the new value
+            data['resources'][resource_key] = updated_resources[resource_key]
+        update_resources(user_id, updated_resources)
+        db.Nations.update_one({'_id': user_id}, {'$set': {'last_explore': time.time()}})
+        return('```Your units conquered a small nation and brought back tribute!\n' +
+               'Collected: ' + str((resources_gained * big_loot_bonus) * num_units) + ' (every resource)```')
+    elif(event).get('wonder') is not None:
+        print('Your units discovered a wonder!')
+        wonder = random.choice(list(get_wonder_info()[user_age].keys()))
+        db.Nations.update_one({'_id': user_id}, {'$set': {'wonder': wonder}})
+        return('```Your units discovered wonder!!!\nWonder: ```' + wonder)
+        
 def validate_execute_shop(userID, unit, numUnits):
     data = list(db.Resources.find({'_id': userID}, {'_id': 0}))[0]
     unit_costs = get_unit_costs()
@@ -801,12 +924,15 @@ def upgrade_age(userID):
     return [False, nextAge]
 
 """HELPER FUNCTIONS"""
-def format_unit_info(unit, costs, rolls):
-    return (
-        f'{unit.capitalize()} - '
-        f'Costs: {costs["food"]} food, {costs["timber"]} timber | '
-        f'Rolls: {rolls["lowerbound"]}-{rolls["upperbound"]}'
-    )
+def format_unit_info(unit, data):
+    costs_str = ', '.join([f'{resource.capitalize()}: {cost}' for resource, cost in data['costs'].items()])
+    rolls_str = f'Rolls: {data["rolls"]["lowerbound"]}-{data["rolls"]["upperbound"]}'
+    return f'{unit.capitalize()} - Costs: {costs_str} | {rolls_str}'
+
+def format_wonder_name(name):
+    words = name.split('_')
+    formatted_name = ' '.join(word.capitalize() for word in words)
+    return formatted_name
 
 def display_units_in_era(era):
     units_info = get_all_units_info()
@@ -814,7 +940,7 @@ def display_units_in_era(era):
 
     if era.lower() in units_info:
         for unit, data in units_info[era.lower()].items():
-            formatted_output += format_unit_info(unit, data['costs'], data['rolls']) + '\n'
+            formatted_output += format_unit_info(unit, data) + '\n'
     else:
         formatted_output += f'No units available for the {era.capitalize()} Era.\n'
 
