@@ -122,12 +122,14 @@ def check_attack(ctx, user_id, arg):
             target_id = ctx.message.mentions[0].id
         else:
             target_id = get_user_id_from_username(arg)
+        print(user_id, arg, target_id)
         #go through checks
         if has_shield(target_id, time.time()):
             return (True, 'This player has a shield, you can\'t attack them...')
+        print('checking if user has army')
         if not has_army(user_id):
             return (True, 'Stop the cap you have no army...')
-        if ctx.message.author.id == arg:
+        if ctx.message.author.id == target_id:
             return (True, 'You cannot attack yourself...')
         if not player_exists_via_id(target_id):
             return (True, 'User does not exist idiot!')
@@ -159,8 +161,13 @@ def check_explore(ctx, user_id, arg):
     return (False, 'OK')
 
 def check_motto(ctx, user_id, arg):
+    profanity_words = ['']
     if len(arg) > 50:
         return (True, '```Motto limited to 50 characters...```')
+    for word in arg:
+        if word.lower() in profanity_words:
+            return (True, '```Profanity detected...```')
+    return (False, 'OK')
 
 def check_in_battle_rating_range(attackerID, defenderID):
     player_one_rating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battle_rating'])
@@ -671,12 +678,8 @@ def attackSequence(attacker_id, defender_id):
         # print('DEBUG', 'ATTACKER_UNIT_COUNT:', attacker_unit_count, 'DEFENDER_UNIT_COUNT', defender_unit_count)
         if attacker_unit_count == 0: #attacker has no units left, for the specific unit
             i += 1 #move to next unit in the list
-            winner = [defender_id, defender_casualties, defender_army]
-            loser = [attacker_id, attacker_casualties, attacker_army]
         if defender_unit_count == 0: #defender has no units left, for the specific unit
             j += 1 #move to next unit in the list
-            winner = [attacker_id, attacker_casualties, attacker_army]
-            loser = [defender_id, defender_casualties, defender_army]
         else: #combat simulation
             attackerRoll = random.randint(unit_dice_rolls[attacker_army_key_list[i]]['lowerbound'], unit_dice_rolls[attacker_army_key_list[i]]['upperbound'])
             defenderRoll = random.randint(unit_dice_rolls[defender_army_key_list[j]]['lowerbound'], unit_dice_rolls[defender_army_key_list[j]]['upperbound'])
@@ -701,8 +704,7 @@ def attackSequence(attacker_id, defender_id):
                     defender_casualties[defender_army_key_list[j]] += 1 #increment casualty counter
                 else: 
                     defender_casualties[defender_army_key_list[j]] = 1 #set casualty counter if new unit
-                #reduce army by lost unit
-                defender_army[defender_army_key_list[j]] -= 1
+                defender_army[defender_army_key_list[j]] -= 1 #reduce army by lost unit
                 winner = [attacker_id, attacker_casualties, attacker_army]
                 loser = [defender_id, defender_casualties, defender_army]
             elif attackerRoll < defenderRoll:
@@ -711,8 +713,7 @@ def attackSequence(attacker_id, defender_id):
                     attacker_casualties[attacker_army_key_list[i]] += 1 #increment casualty counter
                 else: 
                     attacker_casualties[attacker_army_key_list[i]] = 1 #set casualty counter if new unit
-                #reduce army by lost unit
-                attacker_army[attacker_army_key_list[i]] -= 1
+                attacker_army[attacker_army_key_list[i]] -= 1 #reduce army by lost unit
                 winner = [defender_id, defender_casualties, defender_army]
                 loser = [attacker_id, attacker_casualties, attacker_army]
 

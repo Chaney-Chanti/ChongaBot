@@ -70,7 +70,6 @@ async def stats(ctx, arg=None):
     else:
         data = utils.get_user_stats(response)
         army_data = utils.get_user_army(response)
-
         # Calculate remaining shield time
         now = datetime.datetime.utcnow()
         remaining_shield_time = max(0, (data['shield'] - now.timestamp()))
@@ -84,16 +83,16 @@ async def stats(ctx, arg=None):
         embed.add_field(name="Alliance", value='coming soon...', inline=True)
         embed.add_field(name="Battle Rating", value=data['battle_rating'], inline=True)
         embed.add_field(name="Remaining Shield Time",
-                        value=str(datetime.timedelta(seconds=remaining_shield_time)), inline=True)
+                        value=str(datetime.timedelta(seconds=remaining_shield_time)).split('.')[0], inline=True)
 
         # Resources
         embed.add_field(name="======= Resources =======",
-                        value=f"Food: {data['resources']['food']}\n"
-                              f"Timber: {data['resources']['timber']}\n"
-                              f"Metal: {data['resources']['metal']}\n"
-                              f"Oil: {data['resources']['oil']}\n"
-                              f"Wealth: {data['resources']['wealth']}\n"
-                              f"Knowledge: {data['resources']['knowledge']}", inline=False)
+                        value=f"```Food: {data['resources']['food']}           {data['resources']['food_rate']}/hr```"
+                              f"```Timber: {data['resources']['timber']}         {data['resources']['timber_rate']}/hr```"
+                              f"```Metal: {data['resources']['metal']}          {data['resources']['metal_rate']}/hr```"
+                              f"```Oil: {data['resources']['oil']}            {data['resources']['oil_rate']}/hr```"
+                              f"```Wealth: {data['resources']['wealth']}         {data['resources']['wealth_rate']}/hr```"
+                              f"```Knowledge: {data['resources']['knowledge']}      {data['resources']['knowledge_rate']}/hr```", inline=False)
 
         # Army
         army_str = '\n'.join([f"{unit}: {army_data[unit]}" for unit in army_data if
@@ -220,6 +219,8 @@ async def shop(ctx, arg1=None, arg2=None):
         users_units = utils.get_users_available_units(age)
         unit = arg1
         num_units = arg2
+        if arg2 == None:
+            num_units = 1
         resource_cost = utils.validate_execute_shop(user_id, unit, num_units)
         if str(unit) not in users_units:
             embed = nextcord.Embed(description='This unit does not exist in the game or you do not have access to this unit.', color=0xff0000)
@@ -289,7 +290,7 @@ async def attack(ctx, arg=None):
         players_str = ', '.join(players)
         embed = nextcord.Embed(
             title='Players You Can Attack',
-            description=f'Here is a list of players you can attack: {players_str}',
+            description=f'Here is a list of players you can attack:\n {players_str}',
             color=0xff0000  # Set the color of the embed as needed
         )
         await ctx.channel.send(embed=embed)
@@ -326,8 +327,7 @@ async def set_motto(ctx, *, arg=None):
     error, response = utils.check_motto(ctx, user_id, arg)
     if error:
         await ctx.send(response)
-
-    if arg:
+    elif arg:
         user_stats['motto'] = arg
         utils.update_nation(user_id, user_stats)
         await ctx.send(f"Your motto has been set to: `{arg}`")
