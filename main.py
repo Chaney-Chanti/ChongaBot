@@ -379,10 +379,19 @@ async def wonder(ctx, arg=None):
     else:
         await ctx.send('```You did not type a wonder you have.```')
 
-# #i want to dm users for updates like maintenance
-# @client.command(name='announce', aliases=['Announce', 'ANNOUNCE'])
-# async def announce(ctx, arg=None):
-#     await ctx.send('Command coming soon...')
+#i want to dm users for updates like maintenance
+@client.command(name='announce', aliases=['Announce', 'ANNOUNCE'])
+async def announce(ctx, *, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    if(ctx.message.author.id == 217413468410609664):
+        user_ids = list(db.Nations.find({},{ "_id"}))
+        user_ids = [user['_id'] for user in user_ids]
+        chaneys_message = arg
+        for user_id in user_ids:
+            user = await client.fetch_user(user_id)
+            await user.send(chaneys_message)
+    else:
+        await ctx.send('HAHA ur not Chaney!')
 
 # #trigger random events with storyline
 # @client.command(name='event', aliases=['Event', 'EVENT'])
