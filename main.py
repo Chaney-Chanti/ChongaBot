@@ -203,11 +203,12 @@ async def claim(ctx, arg=None):
 async def shop(ctx, arg1=None, arg2=None):
     user_id, server_id, username = utils.get_message_info(ctx)
     error, response = utils.check_shop(user_id, arg1, arg2)
-    
+    user_stats = utils.get_user_stats(user_id)
+
     if error:
         embed = nextcord.Embed(description=response, color=0xff0000)
         await ctx.send(embed=embed)
-    elif arg1 is None:
+    elif arg1 is None and arg2 == None:
         age = utils.get_age(user_id)
         units_info = utils.display_units_in_era(age)
         embed = nextcord.Embed(title=f'Units Information ({age.capitalize()} Era)', description=f'```{units_info}```', color=0x00ff00)
@@ -229,8 +230,11 @@ async def shop(ctx, arg1=None, arg2=None):
                 await ctx.send(embed=embed)
                 return
             utils.update_resources(user_id, resource_cost[1])
-            utils.update_units(user_id, unit, num_units)
-            embed = nextcord.Embed(description=f'```Successfully bought {num_units} {unit}s```', color=0x00ff00)
+            multiplier = 1
+            if user_stats['wonder'] == 'terra_chonga_army':
+                multiplier = 2
+            utils.update_units(user_id, unit, num_units * multiplier)
+            embed = nextcord.Embed(description=f'```Successfully bought {num_units * multiplier} {unit}s```', color=0x00ff00)
             await ctx.send(embed=embed)
 
 @client.command(name='build', aliases=['Build', 'BUILD'], description='See building prices, and build buildings')

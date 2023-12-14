@@ -154,13 +154,16 @@ def check_explore(ctx, user_id, arg):
     user_stats = get_user_stats(user_id)
     current_time = time.time()
     time_passed_hours = (current_time - user_stats['last_explore']) / 3600
+    print('time passed in hours', time_passed_hours)
     if time_passed_hours <= 6:
-        time_remaining_seconds = 3600 - (current_time - user_stats['last_explore']) % 3600
+        time_remaining_seconds = 21600 - ((current_time - user_stats['last_explore']))
+        print('time remaining in seconds', 21600 - (current_time - user_stats['last_explore']) % 3600)
         # Convert time remaining to hours, minutes, and seconds
-        remaining_hours, remaining_seconds = divmod(time_remaining_seconds, 3600)
-        remaining_minutes, remaining_seconds = divmod(remaining_seconds, 60)
-        return (True, f'```Next Claim in: {remaining_hours} hours, {remaining_minutes} minutes, {int(remaining_seconds)} seconds```')
-    if user_army['explorer'] <= 0 and user_army['caravan'] <= 0 and user_army['conquistador'] <= 0 and user_army['cargoship'] <= 0 and user_army['tradeship'] <= 0:
+        remaining_hours = time_remaining_seconds // 3600
+        remaining_minutes, remaining_seconds = divmod(time_remaining_seconds % 3600, 60)
+        print(remaining_hours, remaining_minutes, remaining_seconds)
+        return (True, f'```Next Expedition in: {remaining_hours} hours, {remaining_minutes} minutes, {int(remaining_seconds)} seconds```')
+    if user_army['explorer'] <= 0 and user_army['caravan'] <= 0 and user_army['conquistador'] <= 0 and user_army['spy'] <= 0 and user_army['tradeship'] <= 0:
         return (True, '```You do not have any exploration units```')
     # if not arg.isnumeric(): #to allocate units
     #     return (True, '```You must specify a number of units to send```')
@@ -259,11 +262,11 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 1, 'upperbound': 20, },
             },
             'keep': { 
-                'costs': {'timber': 500, },
-                'rolls': {'lowerbound': 1, 'upperbound': 50, },
+                'costs': {'timber': 2000, },
+                'rolls': {'lowerbound': 10, 'upperbound': 50, },
             },
             'explorer': { 
-                'costs': {'food': 1000},
+                'costs': {'food': 1000, 'wealth': 200},
                 'rolls': {'lowerbound': 1, 'upperbound': 5, },
             },
         },
@@ -552,7 +555,7 @@ def get_wonder_info():
             }
         },
         'medieval': {
-            'terra_cotta_army': {
+            'terra_chonga_army': {
                  'desc': 'buy one get one free unit',
                  'bonus': 1
             },
