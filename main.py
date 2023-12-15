@@ -72,6 +72,8 @@ async def stats(ctx, arg=None):
         army_data = utils.get_user_army(response)
         # Calculate remaining shield time
         remaining_shield_time = max(0, (data['shield'] - time.time()))
+        remaining_claim_time = max(0, 3600 - (time.time() - data['resources']['last_claim']) % 3600)
+        remaining_exploration_time = max(0, 21600 - ((time.time() - data['last_explore'])))
         # Create the embed
         embed = nextcord.Embed(title=f"======= {data['name']} =======", color=0x00ff00)
         embed.add_field(name="Leader", value=data['username'], inline=True)
@@ -82,6 +84,11 @@ async def stats(ctx, arg=None):
         embed.add_field(name="Battle Rating", value=data['battle_rating'], inline=True)
         embed.add_field(name="Remaining Shield Time",
                         value=str(datetime.timedelta(seconds=remaining_shield_time)).split('.')[0], inline=True)
+        embed.add_field(name="Claim Cooldown",
+                        value=str(datetime.timedelta(seconds=remaining_claim_time)).split('.')[0], inline=True)
+        embed.add_field(name="Exploration Cooldown",
+                        value=str(datetime.timedelta(seconds=remaining_exploration_time)).split('.')[0], inline=True)
+
 
         # Resources
         embed.add_field(name="======= Resources =======",
@@ -382,7 +389,6 @@ async def wonder(ctx, arg=None):
     else:
         await ctx.send('```You did not type a wonder you have.```')
 
-#i want to dm users for updates like maintenance
 @client.command(name='announce', aliases=['Announce', 'ANNOUNCE'])
 async def announce(ctx, *, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)

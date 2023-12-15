@@ -156,14 +156,11 @@ def check_explore(ctx, user_id, arg):
     user_stats = get_user_stats(user_id)
     current_time = time.time()
     time_passed_hours = (current_time - user_stats['last_explore']) / 3600
-    print('time passed in hours', time_passed_hours)
     if time_passed_hours <= 6:
-        time_remaining_seconds = 21600 - ((current_time - user_stats['last_explore']))
-        print('time remaining in seconds', 21600 - (current_time - user_stats['last_explore']) % 3600)
+        time_remaining_seconds = max(0, 21600 - ((current_time - user_stats['last_explore'])))
         # Convert time remaining to hours, minutes, and seconds
         remaining_hours = time_remaining_seconds // 3600
         remaining_minutes, remaining_seconds = divmod(time_remaining_seconds % 3600, 60)
-        print(remaining_hours, remaining_minutes, remaining_seconds)
         return (True, f'```Next Expedition in: {remaining_hours} hours, {remaining_minutes} minutes, {int(remaining_seconds)} seconds```')
     if user_army['explorer'] <= 0 and user_army['caravan'] <= 0 and user_army['conquistador'] <= 0 and user_army['spy'] <= 0 and user_army['tradeship'] <= 0:
         return (True, '```You do not have any exploration units```')
@@ -256,11 +253,11 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 1, 'upperbound': 10, },
             },
             'spearman': { 
-                'costs': {'food': 200, 'timber': 200, },
+                'costs': {'food': 300},
                 'rolls': {'lowerbound': 1, 'upperbound': 15, },
             },
             'archer': { 
-                'costs': {'food': 300, 'timber': 300, },
+                'costs': {'food': 400},
                 'rolls': {'lowerbound': 1, 'upperbound': 20, },
             },
             'keep': { 
@@ -268,37 +265,37 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 5, 'upperbound': 50, },
             },
             'explorer': { 
-                'costs': {'food': 1000, 'wealth': 200},
+                'costs': {'food': 1000, 'wealth': 1000},
                 'rolls': {'lowerbound': 1, 'upperbound': 5, },
             },
         },
         'medieval': {
             'knight': { 
-                'costs': {'food': 400, 'metal': 400, },
+                'costs': {'food': 1000, 'metal': 1000, },
                 'rolls': {'lowerbound': 10, 'upperbound': 20, },
             },
             'crossbowman': { 
-                'costs': {'food': 400, 'timber': 500, },
+                'costs': {'food': 1000, 'timber': 200, },
                 'rolls': {'lowerbound': 10, 'upperbound': 30, },
             },
             'cavalry': { 
-                'costs': {'food': 500, 'metal': 500, },
+                'costs': {'food': 1500, 'metal': 1500, },
                 'rolls': {'lowerbound': 10, 'upperbound': 35, },
             },
             'trebuchet': { 
-                'costs': {'timber': 600, 'metal': 600, },
+                'costs': {'timber': 3000, 'metal': 3000, },
                 'rolls': {'lowerbound': 10, 'upperbound': 45, },
             },
             'war_elephant': { 
-                'costs': {'food': 800, 'timber': 800, },
+                'costs': {'food': 5000, 'metal': 3000, },
                 'rolls': {'lowerbound': 20, 'upperbound': 80, },
             },
             'castle': { 
-                'costs': {'food': 1000, 'timber': 1000, 'metal': 1000, 'wealth': 1000},
+                'costs': {'food': 5000, 'timber': 5000, 'metal': 5000, 'wealth': 5000},
                 'rolls': {'lowerbound': 30, 'upperbound': 100, },
             },
             'caravan': { 
-                'costs': {'food': 1500},
+                'costs': {'food': 2000, 'wealth': 2000},
                 'rolls': {'lowerbound': 1, 'upperbound': 10, },
             },
         },
@@ -526,9 +523,9 @@ def get_buildings_costs():
 def get_age_costs():
     ageCosts = {
         'medival': 200000,
-        'englightment': 500000,
-        'modern': 1000000,
-        'space': 2000000,
+        'englightment': 1000000,
+        'modern': 2000000,
+        'space': 10000000,
     }
     return ageCosts
 
@@ -903,16 +900,16 @@ def buy_building(user_id, building, num_build):
     rate_increase = age_resource_rate_increases[age]
     res_data = list(db.Resources.find({'_id': user_id}, {'_id': 0}))[0]
     nation_data = list(db.Nations.find({'_id': user_id}, {'_id': 0}))[0]
-
     buildingCosts = get_buildings_costs()
     cost = buildingCosts[building]
-    
+    update_res = {}
     for resource in cost:
         if res_data[resource] - cost[resource] * num_build >= 0:
             res_data[resource] -= cost[resource] * num_build
-            update_resources(user_id, res_data)
         else:
             return False
+    update_resources(user_id, res_data)
+    return True
     nation_data[building] += num_build
     if building == 'granary': 
         res_data['food_rate'] += rate_increase * num_build
@@ -973,6 +970,25 @@ def display_units_in_era(era):
         formatted_output += f'No units available for the {era.capitalize()} Era.\n'
 
     return formatted_output
+
+def has_profanity(message):
+    message = message.lower()
+    #wouldnt let me put message.lower() in parameter
+    list_of_slurs = ['nigga', 'negro', 'nigger', 'fag', 'dyke', 'gook', 'chink',]
+    character_map = {
+        '@': 'a',
+        '$': 's',
+        '0': 'o',
+        '!': 'i',
+    }
+    list_of_special_characters = list(character_map.keys())
+    for character in list_of_special_characters:
+        if character in message:
+            message.replace(character, character_map[character])
+
+    for slur in list_of_slurs:
+        if slur in message:
+            return(True)    
 
 def direct_message_user():
     pass
