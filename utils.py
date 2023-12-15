@@ -42,6 +42,7 @@ unit_capacities = { # probably move this into the units info section
     'tradeship': 10000,
 }
 shield_length = 86400 #1 day shield
+exploration_cooldown = 21600
 
 """BOOLEAN CHECK FUNCTIONS"""
 def check_nation_exists(user_id):
@@ -84,7 +85,7 @@ def check_claim(userID):
         return(True, 'User does not exist')
     return(False, 'OK')
 
-def check_shop(userID, arg, arg2):
+def check_shop(userID, arg, arg2=1):
     #get number of arguments
     if arg != None:
         arg = arg.lower()
@@ -95,7 +96,8 @@ def check_shop(userID, arg, arg2):
             return(True, f'Incorrect parameters. Format: {prefix}shop or {prefix}shop unit number')
         if arg not in get_all_units():
             return(True, 'Unit does not exist')
-        if int(arg2) <= 0:
+        print(arg2)
+        if not isinstance(arg2, int) or arg2 <= 0:
             return(True, 'You must specify a positive number of units')
     return (False, 'OK')
 
@@ -263,7 +265,7 @@ def get_all_units_info():
             },
             'keep': { 
                 'costs': {'timber': 2000, },
-                'rolls': {'lowerbound': 10, 'upperbound': 50, },
+                'rolls': {'lowerbound': 5, 'upperbound': 50, },
             },
             'explorer': { 
                 'costs': {'food': 1000, 'wealth': 200},

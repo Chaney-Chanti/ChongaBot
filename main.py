@@ -154,12 +154,12 @@ async def claim(ctx, arg=None):
     if time_passed_hours >= 1:  # as long as 1 hour has passed, we can collect
         updated_resources = {
             'last_claim': current_time,
-            'food': math.ceil(data['resources']['food_rate'] * time_passed_hours + data['resources']['food']) * food_bonus,
-            'timber': math.ceil(data['resources']['timber_rate'] * time_passed_hours + data['resources']['timber']) * timber_bonus,
-            'metal': math.ceil(data['resources']['metal_rate'] * time_passed_hours + data['resources']['metal']) * metal_bonus,
-            'wealth': math.ceil(data['resources']['wealth_rate'] * time_passed_hours + data['resources']['wealth']) * wealth_bonus,
-            'oil': math.ceil(data['resources']['oil_rate'] * time_passed_hours + data['resources']['oil']) * oil_bonus,
-            'knowledge': math.ceil(data['resources']['knowledge_rate'] * time_passed_hours + data['resources']['knowledge']) * knowledge_bonus,
+            'food': math.ceil(data['resources']['food_rate'] * time_passed_hours + data['resources']['food'] * food_bonus),
+            'timber': math.ceil(data['resources']['timber_rate'] * time_passed_hours + data['resources']['timber'] * timber_bonus),
+            'metal': math.ceil(data['resources']['metal_rate'] * time_passed_hours + data['resources']['metal'] * metal_bonus),
+            'wealth': math.ceil(data['resources']['wealth_rate'] * time_passed_hours + data['resources']['wealth'] * wealth_bonus),
+            'oil': math.ceil(data['resources']['oil_rate'] * time_passed_hours + data['resources']['oil'] * oil_bonus),
+            'knowledge': math.ceil(data['resources']['knowledge_rate'] * time_passed_hours + data['resources']['knowledge'] * knowledge_bonus),
         }
 
         db.Resources.update_one({'_id': user_id}, {'$set': updated_resources})
@@ -200,7 +200,7 @@ async def claim(ctx, arg=None):
         await ctx.send(embed=embed)
     
 @client.command(name='shop', aliases=['Shop', 'SHOP'], description='See unit prices and purchase unit')
-async def shop(ctx, arg1=None, arg2=None):
+async def shop(ctx, arg1=None, arg2=1):
     user_id, server_id, username = utils.get_message_info(ctx)
     error, response = utils.check_shop(user_id, arg1, arg2)
     user_stats = utils.get_user_stats(user_id)
@@ -208,7 +208,7 @@ async def shop(ctx, arg1=None, arg2=None):
     if error:
         embed = nextcord.Embed(description=response, color=0xff0000)
         await ctx.send(embed=embed)
-    elif arg1 is None and arg2 == None:
+    elif arg1 is None:
         age = utils.get_age(user_id)
         units_info = utils.display_units_in_era(age)
         embed = nextcord.Embed(title=f'Units Information ({age.capitalize()} Era)', description=f'```{units_info}```', color=0x00ff00)
@@ -218,8 +218,7 @@ async def shop(ctx, arg1=None, arg2=None):
         users_units = utils.get_users_available_units(age)
         unit = arg1
         num_units = arg2
-        if arg2 == None:
-            num_units = 1
+        print('num_units', num_units)
         resource_cost = utils.validate_execute_shop(user_id, unit, num_units)
         if str(unit) not in users_units:
             embed = nextcord.Embed(description='This unit does not exist in the game or you do not have access to this unit.', color=0xff0000)
