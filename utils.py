@@ -909,7 +909,6 @@ def buy_building(user_id, building, num_build):
         else:
             return False
     update_resources(user_id, res_data)
-    return True
     nation_data[building] += num_build
     if building == 'granary': 
         res_data['food_rate'] += rate_increase * num_build
