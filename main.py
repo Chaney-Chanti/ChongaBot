@@ -35,6 +35,10 @@ async def on_ready():
     print('Currently in ' + str(len(client.guilds)) + ' servers!');
     print('We have ' + str(utils.get_num_users()) + ' active players!');
 
+# @client.before_invoke
+# async def preprocessing():
+#     pass
+
 @client.command(name='help', aliases=['Help', 'HELP'], description='See list of commands')
 async def help(ctx):
     embed = nextcord.Embed(title=f"{prefix}help", description='help command for if you are acoustic')
@@ -203,7 +207,6 @@ async def claim(ctx, arg=None):
             ),
             color=0xff0000  # Set the color of the embed as needed
         )
-
         await ctx.send(embed=embed)
     
 @client.command(name='shop', aliases=['Shop', 'SHOP'], description='See unit prices and purchase unit')
@@ -225,7 +228,6 @@ async def shop(ctx, arg1=None, arg2=1):
         users_units = utils.get_users_available_units(age)
         unit = arg1
         num_units = arg2
-        print('num_units', num_units)
         resource_cost = utils.validate_execute_shop(user_id, unit, num_units)
         if str(unit) not in users_units:
             embed = nextcord.Embed(description='This unit does not exist in the game or you do not have access to this unit.', color=0xff0000)
@@ -247,18 +249,14 @@ async def shop(ctx, arg1=None, arg2=1):
 async def build(ctx, arg1=None, arg2=None):
     userID, server_id, username = utils.get_message_info(ctx)
     error, response = utils.check_build(userID, arg1, arg2)
-
     if error:
         await ctx.send(response)
     elif arg1 is None and arg2 is None:
         building_costs = utils.get_buildings_costs()
-        
         embed = nextcord.Embed(title='Building Costs', color=0x00ff00)
-        
         for building, cost in building_costs.items():
             cost_str = ', '.join([f'{value} {resource}' for resource, value in cost.items()])
             embed.add_field(name=building.capitalize(), value=f'Cost: {cost_str}', inline=False)
-
         await ctx.send(embed=embed)
     else:
         building = arg1

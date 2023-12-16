@@ -275,7 +275,7 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 10, 'upperbound': 20, },
             },
             'crossbowman': { 
-                'costs': {'food': 1000, 'timber': 200, },
+                'costs': {'food': 1000, 'timber': 500, },
                 'rolls': {'lowerbound': 10, 'upperbound': 30, },
             },
             'cavalry': { 
@@ -522,7 +522,7 @@ def get_buildings_costs():
 
 def get_age_costs():
     ageCosts = {
-        'medival': 200000,
+        'medieval': 200000,
         'englightment': 1000000,
         'modern': 2000000,
         'space': 10000000,
@@ -540,7 +540,7 @@ def get_wonder_info():
             # },
             'hanging_gardens': {
                 'desc': 'increase food production by 1.25x',
-                'bonus': 1.25,
+                'bonus': 2,
             },
             # 'machu_picchu': {
             #     'desc': 'increase'
@@ -550,7 +550,7 @@ def get_wonder_info():
             # },
             'the_great_wall_of_chonga': {
                 'desc': 'increase rolls for defense units by 1.25x',
-                'bonus': 1.25,
+                'bonus': 2,
             }
         },
         'medieval': {
@@ -560,11 +560,11 @@ def get_wonder_info():
             },
             'colloseum': {
                  'desc': 'increase unit rolls by 1.25x (not defense units)',
-                 'bonus': 1.25,
+                 'bonus': 2,
             },
             'the_black_forest': {
                  'desc': 'increase timber production by 1.25x',
-                 'bonus': 1.25,
+                 'bonus': 2,
             },
             # 'forbidden_city_of_chonga': {
             #      'desc': 'increase'
@@ -573,11 +573,11 @@ def get_wonder_info():
         'enlightment': {
             'palace_of_versailles': {
                 'desc': 'increase knowledge production by 1.25x',
-                'bonus': 1.25,
+                'bonus': 2,
             },
             'the_chongalayas': {
                 'desc': 'increase metal production by 1.25x',
-                'bonus': 1.25,
+                'bonus': 2,
             },
             # 'taj_mahal': {
             #     'desc': 'increase'
@@ -586,7 +586,7 @@ def get_wonder_info():
         'modern': {
             'the_rivers_of_chonga': {
                 'desc': 'increase wealth production by 1.25x',
-                'bonus': 1.25,
+                'bonus': 2,
             },
             'supercollider': {
                 'desc': 'if attacked by icbm, reduce roll by 75%',
@@ -594,7 +594,7 @@ def get_wonder_info():
             },
             'the_oil_fields_of_chonga': {
                 'desc': 'increase oil production by 1.25x',
-                'bonus': 1.25,
+                'bonus': 2,
             },
             # 'eiffel_tower': {
             #     'desc': 'increase'
@@ -929,13 +929,15 @@ def buy_building(user_id, building, num_build):
 def upgrade_age(userID):
     userData = get_user_stats(userID)
     # pprint.pprint(userData)    
-    if userData['age'] == 'Medieval':
-        nextAge = 'Enlightment'
-    elif userData['age'] == 'Enlightment':
-        nextAge = 'Modern'
-    elif userData['age'] == 'Modern':
-        nextAge = 'Space'
-    elif userData['age'] == 'Space':
+    if userData['age'] == 'ancient':
+        nextAge = 'medieval'
+    if userData['age'] == 'medieval':
+        nextAge = 'enlightment'
+    elif userData['age'] == 'enlightment':
+        nextAge = 'modern'
+    elif userData['age'] == 'modern':
+        nextAge = 'space'
+    elif userData['age'] == 'space':
         nextAge = ''
     if nextAge == '':
         return [False, nextAge]
