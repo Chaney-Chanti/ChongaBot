@@ -150,17 +150,17 @@ async def claim(ctx, arg=None):
     
     food_bonus = timber_bonus = metal_bonus = wealth_bonus = oil_bonus = knowledge_bonus = 1
     if data['wonder'] == 'hanging_gardens':
-        food_bonus = 1.25
+        food_bonus = 2
     if data['wonder'] == 'the_black_forest':
-        timber_bonus = 1.25
+        timber_bonus = 2
     if data['wonder'] == 'the_chongalayas':
-        metal_bonus = 1.25
+        metal_bonus = 2
     if data['wonder'] == 'the_rivers_of_chonga':
-        wealth_bonus = 1.25
+        wealth_bonus = 2
     if data['wonder'] == 'the_oil_fields_of_chonga':
-        oil_bonus = 1.25
+        oil_bonus = 2
     if data['wonder'] == 'palace_of_versailles':
-        knowledge_bonus = 1.25
+        knowledge_bonus = 2
 
     if time_passed_hours >= 1:  # as long as 1 hour has passed, we can collect
         updated_resources = {

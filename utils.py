@@ -523,7 +523,7 @@ def get_buildings_costs():
 def get_age_costs():
     ageCosts = {
         'medieval': 200000,
-        'englightment': 1000000,
+        'enlightment': 1000000,
         'modern': 2000000,
         'space': 10000000,
     }
