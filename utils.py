@@ -318,7 +318,7 @@ def get_all_units_info():
             },
             'fortress': { 
                 'costs': {'food': 20000, 'timber': 20000, 'metal': 20000, 'wealth': 20000},
-                'rolls': {'lowerbound': 100, 'upperbound': 800, },
+                'rolls': {'lowerbound': 100, 'upperbound': 400, },
             },
             'conquistador': { 
                 'costs': {'food': 2000,},
@@ -359,7 +359,7 @@ def get_all_units_info():
                 'rolls': {'lowerbound': 1500, 'upperbound': 4000, },
             },
             'spy': { 
-                'costs': {'food': 4000,},
+                'costs': {'food': 20000, 'wealth': 20000},
                 'rolls': {'lowerbound': 10, 'upperbound': 20, },
             },
         },
@@ -382,7 +382,7 @@ def get_all_units_info():
             },
             'deathstar': { 
                 'costs': {'metal': 5000000, 'wealth': 5000000, 'oil': 5000000},
-                'rolls': {'lowerbound': 20000, 'upperbound': 50000, },
+                'rolls': {'lowerbound': 50000, 'upperbound': 1000000, },
             },
                'planetary_fortress': { 
                 'costs': {'metal': 100000, 'wealth': 100000, 'oil': 100000},
@@ -404,7 +404,7 @@ def get_exploration_events():
         'free_resources': 'free_resources',
         'ancient': 1000,
         'medieval': 5000,
-        'enlightenment': 10000,
+        'enlightment': 10000,
         'modern': 20000,
         'space': 40000,
     },
@@ -412,7 +412,7 @@ def get_exploration_events():
         'free_units': 'free_units',
         'ancient': get_unit_names_by_age('ancient'),
         'medieval': get_unit_names_by_age('medieval'),
-        'enlightenment': get_unit_names_by_age('enlightment'),
+        'enlightment': get_unit_names_by_age('enlightment'),
         'modern': get_unit_names_by_age('modern'),
         'space': get_unit_names_by_age('space'),
     },
@@ -434,7 +434,7 @@ def get_exploration_events():
         'big_loot': 'big_loot',
         'ancient': 1000,
         'medieval': 5000,
-        'enlightenment': 10000,
+        'enlightment': 10000,
         'modern': 20000,
         'space': 40000,
     },
@@ -442,7 +442,7 @@ def get_exploration_events():
         'wonder': 'wonder',
         'ancient': [],
         'medieval': [],
-        'enlightenment': [],
+        'enlightment': [],
         'modern': [],
         'space': [],
     },
