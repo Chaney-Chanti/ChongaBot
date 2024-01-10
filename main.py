@@ -5,6 +5,7 @@ import os
 import utils
 import pymongo
 import objects.nation, objects.resources, objects.army
+from views.exploration_view import ExplorationView
 import math
 import time
 import datetime
@@ -12,7 +13,6 @@ import pprint
 import random
 import json
 import string
-
 
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
@@ -35,9 +35,15 @@ async def on_ready():
     print('Currently in ' + str(len(client.guilds)) + ' servers!');
     print('We have ' + str(utils.get_num_users()) + ' active players!');
 
-# @client.before_invoke
-# async def preprocessing():
-#     pass
+@client.before_invoke
+async def preprocessing(ctx):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.general_checks(user_id)
+    if error:
+        print(response)
+        raise commands.CommandError("Checks failed.")
+    else:
+        print(response)
 
 @client.command(name='help', aliases=['Help', 'HELP'], description='See list of commands')
 async def help(ctx):
@@ -50,7 +56,7 @@ async def help(ctx):
     await ctx.send(embed=embed)
 
 @client.command(name='createnation', aliases=['CREATENATION', 'CreateNation', 'Createnation'], description='Create your nation, MUST BE ALL ONE WORD!')
-async def createnation(ctx, arg=None):
+async def create_nation(ctx, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
     error, response = utils.check_createnation(user_id, arg)
     if error == True:
@@ -83,8 +89,11 @@ async def stats(ctx, arg=None):
         embed.add_field(name="Leader", value=data['username'], inline=True)
         embed.add_field(name="Age", value=data['age'], inline=True)
         embed.add_field(name="Motto", value=data['motto'], inline=True)
-        embed.add_field(name="Wonder", value=utils.format_wonder_name(data['wonder']), inline=True)
-        embed.add_field(name="Alliance", value='coming soon...', inline=True)
+        wonder_string = ''
+        for wonder in data['owned_wonders']:
+            wonder_string += utils.format_string(wonder) + ', '
+        embed.add_field(name="Wonders", value=wonder_string, inline=True)
+        embed.add_field(name="Alliance", value=data['alliance'], inline=True)
         embed.add_field(name="Battle Rating", value=data['battle_rating'], inline=True)
         embed.add_field(name="Remaining Shield Time",
                         value=str(datetime.timedelta(seconds=remaining_shield_time)).split('.')[0], inline=True)
@@ -92,7 +101,11 @@ async def stats(ctx, arg=None):
                         value=str(datetime.timedelta(seconds=remaining_claim_time)).split('.')[0], inline=True)
         embed.add_field(name="Exploration Cooldown",
                         value=str(datetime.timedelta(seconds=remaining_exploration_time)).split('.')[0], inline=True)
-
+        
+        research_string = ''
+        for research_topic in data['researched_list']:
+            research_string += utils.format_string(research_topic) + ', '
+        embed.add_field(name="======= Researched ========", value=research_string)
 
         # Resources
         embed.add_field(name="======= Resources =======",
@@ -106,6 +119,7 @@ async def stats(ctx, arg=None):
         # Army
         army_str = '\n'.join([f"{unit}: {army_data[unit]}" for unit in army_data if
                              unit not in ['_id', 'username', 'name'] and army_data[unit] != 0])
+        
         embed.add_field(name="======= Army =======", value=army_str, inline=False)
 
         # Buildings
@@ -115,7 +129,12 @@ async def stats(ctx, arg=None):
                               f"Quarries: {data['quarry']}\n"
                               f"Oil Rigs: {data['oilrig']}\n"
                               f"Markets: {data['market']}\n"
-                              f"Universities: {data['university']}", inline=False)
+                              f"Universities: {data['university']}\n" 
+                              f"Keeps: {data['keep']} | "
+                              f"Castles: {data['castle']} | " 
+                              f"Fortresses: {data['fortress']} | " 
+                              f"Army Bases: {data['army_base']} | " 
+                              f"Planetary Fortress: {data['planetary_fortress']}", inline=False)
 
         await ctx.send(embed=embed)
     
@@ -148,29 +167,29 @@ async def claim(ctx, arg=None):
     if time_passed_hours >= resource_claim_cap:  # cap the resource collection to 1 day
         time_passed_hours = resource_claim_cap
     
-    food_bonus = timber_bonus = metal_bonus = wealth_bonus = oil_bonus = knowledge_bonus = 1
-    if data['wonder'] == 'hanging_gardens':
-        food_bonus = 2
-    if data['wonder'] == 'the_black_forest':
-        timber_bonus = 2
-    if data['wonder'] == 'the_chongalayas':
-        metal_bonus = 2
-    if data['wonder'] == 'the_rivers_of_chonga':
-        wealth_bonus = 2
-    if data['wonder'] == 'the_oil_fields_of_chonga':
-        oil_bonus = 2
-    if data['wonder'] == 'palace_of_versailles':
-        knowledge_bonus = 2
+    # food_bonus = timber_bonus = metal_bonus = wealth_bonus = oil_bonus = knowledge_bonus = 1
+    # if 'hanging_gardens' in data['owned_wonders']:
+    #     food_bonus = 2
+    # if 'the_black_forest' in data['owned_wonders']:
+    #     timber_bonus = 2
+    # if 'the_chongalayas' in data['owned_wonders']:
+    #     metal_bonus = 2
+    # if 'the_rivers_of_chonga' in data['owned_wonders']:
+    #     wealth_bonus = 2
+    # if 'the_oil_fields_of_chonga' in data['owned_wonders']:
+    #     oil_bonus = 2
+    # if 'palace_of_versailles' in data['owned_wonders']:
+    #     knowledge_bonus = 2
 
     if time_passed_hours >= 1:  # as long as 1 hour has passed, we can collect
         updated_resources = {
             'last_claim': current_time,
-            'food': math.ceil(data['resources']['food_rate'] * time_passed_hours + data['resources']['food'] * food_bonus),
-            'timber': math.ceil(data['resources']['timber_rate'] * time_passed_hours + data['resources']['timber'] * timber_bonus),
-            'metal': math.ceil(data['resources']['metal_rate'] * time_passed_hours + data['resources']['metal'] * metal_bonus),
-            'wealth': math.ceil(data['resources']['wealth_rate'] * time_passed_hours + data['resources']['wealth'] * wealth_bonus),
-            'oil': math.ceil(data['resources']['oil_rate'] * time_passed_hours + data['resources']['oil'] * oil_bonus),
-            'knowledge': math.ceil(data['resources']['knowledge_rate'] * time_passed_hours + data['resources']['knowledge'] * knowledge_bonus),
+            'food': math.ceil(data['resources']['food_rate'] * time_passed_hours + data['resources']['food']),
+            'timber': math.ceil(data['resources']['timber_rate'] * time_passed_hours + data['resources']['timber']),
+            'metal': math.ceil(data['resources']['metal_rate'] * time_passed_hours + data['resources']['metal']),
+            'wealth': math.ceil(data['resources']['wealth_rate'] * time_passed_hours + data['resources']['wealth']),
+            'oil': math.ceil(data['resources']['oil_rate'] * time_passed_hours + data['resources']['oil']),
+            'knowledge': math.ceil(data['resources']['knowledge_rate'] * time_passed_hours + data['resources']['knowledge']),
         }
 
         db.Resources.update_one({'_id': user_id}, {'$set': updated_resources})
@@ -192,7 +211,7 @@ async def claim(ctx, arg=None):
         await ctx.send(embed=embed)
     else:
         # Calculate time remaining until the next claim
-        time_remaining_seconds = 3600 - (current_time - data['resources']['last_claim']) % 3600
+        time_remaining_seconds = max(0, 3600 - (current_time - data['resources']['last_claim']) % 3600)
 
         # Convert time remaining to hours, minutes, and seconds
         remaining_hours, remaining_seconds = divmod(time_remaining_seconds, 3600)
@@ -209,8 +228,8 @@ async def claim(ctx, arg=None):
         )
         await ctx.send(embed=embed)
     
-@client.command(name='shop', aliases=['Shop', 'SHOP'], description='See unit prices and purchase unit')
-async def shop(ctx, arg1=None, arg2=1):
+@client.command(name='train', aliases=['Train', 'TRAIN'], description='See unit prices and purchase unit')
+async def shop(ctx, arg1=None, arg2=None):
     user_id, server_id, username = utils.get_message_info(ctx)
     error, response = utils.check_shop(user_id, arg1, arg2)
     user_stats = utils.get_user_stats(user_id)
@@ -220,14 +239,30 @@ async def shop(ctx, arg1=None, arg2=1):
         await ctx.send(embed=embed)
     elif arg1 is None:
         age = utils.get_age(user_id)
-        units_info = utils.display_units_in_era(age)
-        embed = nextcord.Embed(title=f'Units Information ({age.capitalize()} Era)', description=f'```{units_info}```', color=0x00ff00)
+        units_info = utils.get_normal_units()[age]
+        print(units_info)
+        embed = nextcord.Embed(title='Hero Units Information', color=0xffd700)  # You can customize the color as needed
+        for unit_name, unit_info in units_info.items():
+                rolls_str = f"Rolls: {unit_info['rolls']['lowerbound']} - {unit_info['rolls']['upperbound']}"
+                combat_type_str = f"Combat Type: {unit_info['combat_type'].capitalize()}"
+                unit_type_str = f"Type: {unit_info['type'].capitalize()}" if unit_info['type'] else ""
+                unit_description = f"{rolls_str}\n{combat_type_str}\n{unit_type_str}"
+
+                embed.add_field(name=f"{unit_name.capitalize()}", value=unit_description, inline=False)
+
         await ctx.send(embed=embed)
     else:
         age = utils.get_age(user_id)
         users_units = utils.get_users_available_units(age)
+        user_stats = utils.get_user_stats(user_id)
+
         unit = arg1
         num_units = arg2
+        if arg2 == None:
+            num_units = 1
+        if arg2 == 'max':
+            num_units = utils.calculate_max(unit, 'unit', user_stats)
+
         resource_cost = utils.validate_execute_shop(user_id, unit, num_units)
         if str(unit) not in users_units:
             embed = nextcord.Embed(description='This unit does not exist in the game or you do not have access to this unit.', color=0xff0000)
@@ -237,9 +272,9 @@ async def shop(ctx, arg1=None, arg2=1):
                 embed = nextcord.Embed(description='You must construct additional pylons (not enough resources)', color=0xff0000)
                 await ctx.send(embed=embed)
                 return
-            utils.update_resources(user_id, resource_cost[1])
+            utils.update_resource(user_id, resource_cost[1])
             multiplier = 1
-            if user_stats['wonder'] == 'terra_chonga_army':
+            if 'terra_chonga_army' in user_stats['owned_wonders']:
                 multiplier = 2
             utils.update_units(user_id, unit, num_units * multiplier)
             embed = nextcord.Embed(description=f'```Successfully bought {num_units * multiplier} {unit}s```', color=0x00ff00)
@@ -247,23 +282,30 @@ async def shop(ctx, arg1=None, arg2=1):
 
 @client.command(name='build', aliases=['Build', 'BUILD'], description='See building prices, and build buildings')
 async def build(ctx, arg1=None, arg2=None):
-    userID, server_id, username = utils.get_message_info(ctx)
-    error, response = utils.check_build(userID, arg1, arg2)
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_build(user_id, arg1, arg2)
     if error:
         await ctx.send(response)
     elif arg1 is None and arg2 is None:
-        building_costs = utils.get_buildings_costs()
+        age = utils.get_age(user_id)
+        building_costs = utils.get_buildings_costs_by_age(age)
         embed = nextcord.Embed(title='Building Costs', color=0x00ff00)
         for building, cost in building_costs.items():
-            cost_str = ', '.join([f'{value} {resource}' for resource, value in cost.items()])
-            embed.add_field(name=building.capitalize(), value=f'Cost: {cost_str}', inline=False)
+            cost_lines = [f'{resource.capitalize()}: {value}' for resource, value in cost.items()]
+            # cost_str = ', '.join(cost_lines)
+            embed.add_field(name=building.capitalize(), value=f'{cost_lines}', inline=False)
         await ctx.send(embed=embed)
     else:
         building = arg1
-        num_build = int(arg2) if arg2 else 1
-
-        if utils.buy_building(userID, building.lower(), num_build):
-            await ctx.send(f'Successfully built {num_build} {building}(s)')
+        if arg2 == None:
+            num_build = 1
+        if arg2 != None and arg2.isnumeric():
+            num_build = int(arg2)
+        if arg2 == 'max':
+            num_build = utils.calculate_max(building, 'building', utils.get_user_stats(user_id))
+        if num_build > 0:
+            if utils.buy_building(user_id, building.lower(), num_build):
+                await ctx.send(f'Successfully built {num_build} {building}(s)')
         else:
             await ctx.send('Bruh Moment... (not enough resources)')
 
@@ -279,11 +321,14 @@ async def ages(ctx):
 @client.command(name='nextage', aliases=['na', 'NA', 'NEXTAGE', 'Nextage', 'NextAge'])
 async def next_age(ctx):
     user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_age(ctx, user_id)
+    if error:
+        await ctx.send(f'{response}\n')
     result = utils.upgrade_age(user_id)
     if result[0]:
         await ctx.send('```Successfully advanced to the ' + result[1] + ' age!```')
     else:
-        await ctx.send('```You got no M\'s in ur bank account (not enough resources) or you\'re at most advanced age.```')
+        await ctx.send('```You got no M\'s in ur bank account (not enough knowledge) or you\'re at most advanced age.```')
 
 @client.command(name='attack', aliases=['ATTACK', 'Attack'], description='See who you can attack, and attack other players')
 async def attack(ctx, arg=None):
@@ -302,22 +347,40 @@ async def attack(ctx, arg=None):
         )
         await ctx.channel.send(embed=embed)
     else:
-        data = utils.attackSequence(user_id, response)
+        attacker_stats, attacker_army, defender_stats, defender_army = utils.form_pvp_armies(user_id, response)
+        #get casualties
+        attacker_army, attacker_casualties, defender_army, defender_casualties, winner = utils.attack_sequence(attacker_stats, attacker_army, defender_stats, defender_army)
+        #update armies
+        print(attacker_army, defender_army)
+        utils.update_army(user_id, attacker_army)
+        utils.update_army(response, defender_army)
+        #update resources
+        if winner == 'attacker':
+            winner_id = user_id
+            loser_id = response
+        if winner == 'defender':
+            winner_id = response
+            loser_id = user_id
+        utils.award_tribute(winner_id, loser_id)
+        #generate battle_summary
+        utils.generate_battle_summary()
+
+        user_stats = utils.get_user_stats(user_id)
+        target_user_stats = utils.get_user_stats(response)
 
         embed = nextcord.Embed(
-            title='BATTLE SUMMARY (TESTING)',
-            description=f'{data["winner"]} DEFEATED {data["loser"]}',
+            title='BATTLE SUMMARY',
+            description=f'{user_id["winner"]} DEFEATED {user_id["loser"]}',
             color=0xff0000  # You can set the color of the embed here
         )
-
-        embed.add_field(name='Winner', value=f'{data["winner_username"]}')
-        embed.add_field(name='Loser', value=f'{data["loser_username"]}')
-        embed.add_field(name='Winner Left You A Message', value=f'{data["winner_motto"]}', inline=False)
-        embed.add_field(name='Winner Battle Rating', value=f'{data["winner_battle_rating"]} (+25)')
-        embed.add_field(name='Loser Battle Rating', value=f'{data["loser_battle_rating"]} (-25)')
-        embed.add_field(name='Plundered', value=f'{data["tribute"]}')
-        embed.add_field(name='Attacker Casualties', value=f'{data["attacker_casualties"]}')
-        embed.add_field(name='Defender Casualties', value=f'{data["defender_casualties"]}')
+        embed.add_field(name='Winner', value=f'{user_id["winner_username"]}')
+        embed.add_field(name='Loser', value=f'{user_id["loser_username"]}')
+        embed.add_field(name='Winner Left You A Message', value=f'{user_id["winner_motto"]}', inline=False)
+        embed.add_field(name='Winner Battle Rating', value=f'{user_id["winner_battle_rating"]} (+25)')
+        embed.add_field(name='Loser Battle Rating', value=f'{user_id["loser_battle_rating"]} (-25)')
+        embed.add_field(name='Plundered', value=f'{user_id["tribute"]}')
+        embed.add_field(name='Attacker Casualties', value=f'{user_id["attacker_casualties"]}')
+        embed.add_field(name='Defender Casualties', value=f'{user_id["defender_casualties"]}')
 
         await ctx.send(embed=embed)
 
@@ -345,14 +408,18 @@ async def set_motto(ctx, *, arg=None):
 @client.command(name='patch', aliases=['Patch', 'PATCH'], description='See list of patch notes')
 async def display_patch(ctx, arg=None):
     await ctx.send(
-    '```New UI using embeds!\n'
-    'New age before medieval is the ancient age!\n'
-    'New units in all ages\n'
-    'New defense units used for defending with higher rolls but cannot be used to attack\n'
-    'New exploration units used to explore the world of chonga and trigger events\n'
-    'Added wonders that now give special benefits\n'
-    'Small quality of life updates like W/L ratio, username included in batte summary, less strict command names\n'
-    'New commands: c!explore c!motto c!patch```'
+    '``` Please Check the github README for more details'
+    'You c!shop has been changed to c!train, additionally you can type \'unit max\' to puchase the max amount of units you can afford, same for c!build building max\n'
+    'keeps, castles, fortresses, army_base, planetary_fortresses have been move to build instead of train\n'
+    'You can only attack within your own age\n'
+    'New hero units! you can get them by exploring!\n'
+    'Exploring has been revamped, exploration units have been taken out and now works like TFT augments.\n'
+    'Unit counters have been implemented. Check the github README for more details\n'
+    'You can now research different things to increase production levels, you must also research everything in your age to go to the next age\n'
+    'Alliances has been implemented\n'
+    'Implemented Bosses for alliances\n'
+    '\n'
+    '```'
     )
 
 @client.command(name='explore', aliases=['Explore', 'EXPLORE'], description='Send out exploration units to trigger events')
@@ -362,30 +429,31 @@ async def display_patch(ctx, arg=None):
     if error == True:
         await ctx.send(response)
     else:
-        user_army = utils.get_user_army(user_id)
-        message = utils.explore(user_id, user_army)
-        await ctx.send(message)
+        async def callback(selected_option, interaction):
+            msg_embed = utils.execute_explore(user_id, selected_option)
+            await ctx.send(embed=msg_embed)
 
-@client.command(name='wonder', aliases=['Wonder', 'WONDER', 'wonders', 'Wonders', 'WONDERS'], description='See and activate wonders you own')
+        user_army = utils.get_user_army(user_id)
+        exploration_options = utils.get_exploration_options(user_id, user_army)
+        exploration_view = ExplorationView(user_id, exploration_options, callback)
+        await ctx.send('Please select one option', view=exploration_view)
+
+@client.command(name='wonder', aliases=['Wonder', 'WONDER', 'wonders', 'Wonders', 'WONDERS', 'wonder list', 'Wonder List', 'WonderList', 'wonderlist'], 
+                description='See information on wonders')
 async def wonder(ctx, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
-    user_stats = utils.get_user_stats(user_id)
+    
+    wonders_list = utils.get_wonder_info()
+    embed = nextcord.Embed(title='Wonders Information', color=0x00ff00)  # You can customize the color as needed
 
-    if arg is None:
-        embed = nextcord.Embed(title=f'{username}\'s Owned Wonders', description='\n'.join(user_stats['owned_wonders']), color=0x00ff00)
-        await ctx.send(embed=embed)
-    elif arg.lower() == 'list':
-        wonders_list = utils.get_wonder_list()
+    for era, wonders in wonders_list.items():
+        era_field_value = ""
+        for wonder_name, wonder_info in wonders.items():
+            era_field_value += f"*{utils.format_string(wonder_name)}*: {wonder_info['desc']})\n"
 
-        formatted_wonders = [utils.format_wonder_name(name) for name in wonders_list]
+        embed.add_field(name=f"{era.capitalize()} Era", value=era_field_value, inline=False)
 
-        embed = nextcord.Embed(title='Available Wonders', description='\n'.join(formatted_wonders), color=0x0000ff)
-        await ctx.send(embed=embed)
-    elif arg in utils.get_wonder_list():
-        db.Nations.update_one({'_id': user_id}, {'$set': {'wonder': arg}})
-        await ctx.send(f'```Activated wonder: {arg}```')
-    else:
-        await ctx.send('```You did not type a wonder you have.```')
+    await ctx.send(embed=embed)
 
 @client.command(name='announce', aliases=['Announce', 'ANNOUNCE'])
 async def announce(ctx, *, arg=None):
@@ -400,14 +468,55 @@ async def announce(ctx, *, arg=None):
     else:
         await ctx.send('HAHA ur not Chaney!')
 
-# #trigger random events with storyline
-# @client.command(name='event', aliases=['Event', 'EVENT'])
-# async def event(ctx, arg=None):
-#     await ctx.send('Command coming soon...')
+#trigger random events with storyline
+@client.command(name='createalliance', aliases=['CREATEALLIANCE', 'CreateAlliance'])
+async def event(ctx, arg=None):
+    await ctx.send('Command coming soon...')
 
-# #
-# @client.command(name='event', aliases=['Event', 'EVENT'])
-# async def event(ctx, arg=None):
-#     await ctx.send('Command coming soon...')
+@client.command(name='research', aliases=['RESEARCH', 'Research'])
+async def event(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_research(ctx, user_id, arg)
+    if error == True:
+        await ctx.send(response)
+    else:
+        if arg == None:
+            age = utils.get_age(user_id)
+            research_info = utils.get_research_info_by_age(age)
+            embed = nextcord.Embed(title=f"Research Information:", color=0x00ff00)
+            for technology, details in research_info.items():
+                cost = details['costs']
+                embed.add_field(
+                    name=f'{technology.capitalize()}',
+                    value=f'Costs: {cost} knowledge \n Description: {details["desc"]}',
+                    inline=False
+                )
+
+            # # Send the embed
+            await ctx.send(embed=embed)
+        else:
+            status, response = utils.research(user_id, arg)
+            await ctx.send(f'```{response}```')
+
+#trigger random events with storyline
+@client.command(name='hero', aliases=['Hero', 'HERO', 'heroes', 'Heroes', 'HEROES'])
+async def event(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    age = utils.get_age(user_id)
+    units_info = utils.get_hero_units()[age]
+    embed = nextcord.Embed(title='Hero Units Information', color=0xffd700)  # You can customize the color as needed
+    print(units_info)
+    for unit_name, unit_info in units_info.items():
+            rolls_str = f"Rolls: {unit_info['rolls']['lowerbound']} - {unit_info['rolls']['upperbound']}"
+            combat_type_str = f"Combat Type: {unit_info['combat_type'].capitalize()}"
+            unit_type_str = f"Type: {unit_info['type'].capitalize()}" if unit_info['type'] else ""
+            unit_description = f"{rolls_str}\n{combat_type_str}\n{unit_type_str}\nDesc: {unit_info['desc']}"
+
+            embed.add_field(name=f"{unit_name.capitalize()}", value=unit_description, inline=False)
+    await ctx.send(embed=embed)
 
 client.run(TOKEN)
+
+
+
+

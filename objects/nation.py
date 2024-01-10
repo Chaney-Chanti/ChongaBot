@@ -13,18 +13,22 @@ class CreateNation:
         self.num_wins = 0
         self.num_losses = 0
         self.wonder = ''
-        self.owned_wonders = [] #can roll for wonders for bonuses
-        self.motto = '' #used as a message for when you attack people
-        self.alliance = '' #not used but may be needed later
-        self.ability = 'none' #not used but may be needed later
+        self.motto = ''
+        self.alliance = ''
+        self.owned_wonders = []
+        self.owned_heroes = []
+        self.researched_list = [] 
         self.owned_abiltiies = [] #not used but may be needed later
-        self.match_history = { #not used but may be needed later
-            'attacker_username': '',
-            'summary': '',
-        }
+
         self.granary = 0
         self.lumbermill = 0
         self.quarry = 0
         self.oilrig = 0            
         self.market = 0
         self.university = 0
+
+        self.keep = 0
+        self.castle = 0
+        self.fortress = 0
+        self.army_base = 0
+        self.planetary_fortress = 0
