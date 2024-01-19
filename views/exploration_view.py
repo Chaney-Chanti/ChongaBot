@@ -33,7 +33,7 @@ class ExplorationView(View):
         for i in range(len(exploration_options)):
             label = exploration_options[i]['label']
             custom_id = f'button{i}'
-            button = ExplorationButton(label, custom_id, exploration_options[i], self.callback, self.creator_id ,self)
+            button = ExplorationButton(label, custom_id, exploration_options[i], self.callback, self.creator_id , self)
             self.add_item(button)
 
     async def on_timeout(self):

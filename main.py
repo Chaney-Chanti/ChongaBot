@@ -4,8 +4,10 @@ from nextcord.ext import commands
 import os
 import utils
 import pymongo
-import objects.nation, objects.resources, objects.army
+import objects.nation, objects.resources, objects.army #objects.alliance
+from objects.alliance import Alliance
 from views.exploration_view import ExplorationView
+from views.new_member_view import AllianceAcceptanceView    
 import math
 import time
 import datetime
@@ -166,20 +168,6 @@ async def claim(ctx, arg=None):
 
     if time_passed_hours >= resource_claim_cap:  # cap the resource collection to 1 day
         time_passed_hours = resource_claim_cap
-    
-    # food_bonus = timber_bonus = metal_bonus = wealth_bonus = oil_bonus = knowledge_bonus = 1
-    # if 'hanging_gardens' in data['owned_wonders']:
-    #     food_bonus = 2
-    # if 'the_black_forest' in data['owned_wonders']:
-    #     timber_bonus = 2
-    # if 'the_chongalayas' in data['owned_wonders']:
-    #     metal_bonus = 2
-    # if 'the_rivers_of_chonga' in data['owned_wonders']:
-    #     wealth_bonus = 2
-    # if 'the_oil_fields_of_chonga' in data['owned_wonders']:
-    #     oil_bonus = 2
-    # if 'palace_of_versailles' in data['owned_wonders']:
-    #     knowledge_bonus = 2
 
     if time_passed_hours >= 1:  # as long as 1 hour has passed, we can collect
         updated_resources = {
@@ -272,7 +260,7 @@ async def shop(ctx, arg1=None, arg2=None):
                 embed = nextcord.Embed(description='You must construct additional pylons (not enough resources)', color=0xff0000)
                 await ctx.send(embed=embed)
                 return
-            utils.update_resource(user_id, resource_cost[1])
+            utils.update_resources(user_id, resource_cost[1])
             multiplier = 1
             if 'terra_chonga_army' in user_stats['owned_wonders']:
                 multiplier = 2
@@ -361,26 +349,29 @@ async def attack(ctx, arg=None):
         if winner == 'defender':
             winner_id = response
             loser_id = user_id
-        utils.award_tribute(winner_id, loser_id)
+        
+        winner_stats = utils.get_user_stats(winner_id)
+        loser_stats = utils.get_user_stats(loser_stats)
+        tribute = utils.award_tribute(winner_id, loser_id)
         #generate battle_summary
-        utils.generate_battle_summary()
+        summary = utils.generate_battle_summary(winner_stats['name'], loser_stats['name'], tribute, attacker_casualties, defender_casualties,
+                                      winner_stats['username'], loser_stats['username'], winner_stats['motto'],
+                                      winner_stats['battle_rating'], loser_stats['battle_rating'])
 
-        user_stats = utils.get_user_stats(user_id)
-        target_user_stats = utils.get_user_stats(response)
 
         embed = nextcord.Embed(
             title='BATTLE SUMMARY',
-            description=f'{user_id["winner"]} DEFEATED {user_id["loser"]}',
+            description=f'{summary["winner"]} DEFEATED {summary["loser"]}',
             color=0xff0000  # You can set the color of the embed here
         )
-        embed.add_field(name='Winner', value=f'{user_id["winner_username"]}')
-        embed.add_field(name='Loser', value=f'{user_id["loser_username"]}')
-        embed.add_field(name='Winner Left You A Message', value=f'{user_id["winner_motto"]}', inline=False)
-        embed.add_field(name='Winner Battle Rating', value=f'{user_id["winner_battle_rating"]} (+25)')
-        embed.add_field(name='Loser Battle Rating', value=f'{user_id["loser_battle_rating"]} (-25)')
-        embed.add_field(name='Plundered', value=f'{user_id["tribute"]}')
-        embed.add_field(name='Attacker Casualties', value=f'{user_id["attacker_casualties"]}')
-        embed.add_field(name='Defender Casualties', value=f'{user_id["defender_casualties"]}')
+        embed.add_field(name='Winner', value=f'{summary["winner_username"]}')
+        embed.add_field(name='Loser', value=f'{summary["loser_username"]}')
+        embed.add_field(name='Winner Left You A Message', value=f'{summary["winner_motto"]}', inline=False)
+        embed.add_field(name='Winner Battle Rating', value=f'{summary["winner_battle_rating"]} (+25)')
+        embed.add_field(name='Loser Battle Rating', value=f'{summary["loser_battle_rating"]} (-25)')
+        embed.add_field(name='Plundered', value=f'{summary["tribute"]}')
+        embed.add_field(name='Attacker Casualties', value=f'{summary["attacker_casualties"]}')
+        embed.add_field(name='Defender Casualties', value=f'{summary["defender_casualties"]}')
 
         await ctx.send(embed=embed)
 
@@ -468,13 +459,27 @@ async def announce(ctx, *, arg=None):
     else:
         await ctx.send('HAHA ur not Chaney!')
 
+
 #trigger random events with storyline
-@client.command(name='createalliance', aliases=['CREATEALLIANCE', 'CreateAlliance'])
-async def event(ctx, arg=None):
-    await ctx.send('Command coming soon...')
+@client.command(name='hero', aliases=['Hero', 'HERO', 'heroes', 'Heroes', 'HEROES'])
+async def hero(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    age = utils.get_age(user_id)
+    units_info = utils.get_hero_units()[age]
+    embed = nextcord.Embed(title='Hero Units Information', color=0xffd700)  # You can customize the color as needed
+    print(units_info)
+    for unit_name, unit_info in units_info.items():
+            rolls_str = f"Rolls: {unit_info['rolls']['lowerbound']} - {unit_info['rolls']['upperbound']}"
+            combat_type_str = f"Combat Type: {unit_info['combat_type'].capitalize()}"
+            unit_type_str = f"Type: {unit_info['type'].capitalize()}" if unit_info['type'] else ""
+            unit_description = f"{rolls_str}\n{combat_type_str}\n{unit_type_str}\nDesc: {unit_info['desc']}"
+
+            embed.add_field(name=f"{unit_name.capitalize()}", value=unit_description, inline=False)
+    await ctx.send(embed=embed)
+
 
 @client.command(name='research', aliases=['RESEARCH', 'Research'])
-async def event(ctx, arg=None):
+async def research(ctx, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
     error, response = utils.check_research(ctx, user_id, arg)
     if error == True:
@@ -499,21 +504,165 @@ async def event(ctx, arg=None):
             await ctx.send(f'```{response}```')
 
 #trigger random events with storyline
-@client.command(name='hero', aliases=['Hero', 'HERO', 'heroes', 'Heroes', 'HEROES'])
-async def event(ctx, arg=None):
+#check if user is already in an alliance
+@client.command(name='createalliance', aliases=['CREATEALLIANCE', 'CreateAlliance'])
+async def createalliance(ctx, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
-    age = utils.get_age(user_id)
-    units_info = utils.get_hero_units()[age]
-    embed = nextcord.Embed(title='Hero Units Information', color=0xffd700)  # You can customize the color as needed
-    print(units_info)
-    for unit_name, unit_info in units_info.items():
-            rolls_str = f"Rolls: {unit_info['rolls']['lowerbound']} - {unit_info['rolls']['upperbound']}"
-            combat_type_str = f"Combat Type: {unit_info['combat_type'].capitalize()}"
-            unit_type_str = f"Type: {unit_info['type'].capitalize()}" if unit_info['type'] else ""
-            unit_description = f"{rolls_str}\n{combat_type_str}\n{unit_type_str}\nDesc: {unit_info['desc']}"
+    error, response = utils.check_createalliance(ctx, user_id, arg) #basically the same as createnation checks
+    if error == True:
+        await ctx.send(response)
+    else:
+        user = utils.get_user_stats(user_id)
+        alliance = Alliance(arg, user_id, user['username'], user['battle_rating'], server_id, time.time()) #not sure about the naming convention
+        db.Alliances.insert_one(alliance.__dict__)
+        db.Nations.update_one({'_id': user_id}, {'$set': {'alliance': arg}})
+        await ctx.send('Alliance Created! Type ' + prefix + 'alliance to show info about your alliance!')
 
-            embed.add_field(name=f"{unit_name.capitalize()}", value=unit_description, inline=False)
-    await ctx.send(embed=embed)
+@client.command(name='alliance', aliases=['ALLIANCE', 'Alliance'])
+async def createalliance(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_alliance(ctx, user_id, arg) #basically the same as createnation checks
+    if error == True:
+        await ctx.send(response)
+    else:
+        user_stats = utils.get_user_stats(user_id)
+        alliance_data = utils.get_alliance_data(user_stats['alliance'])
+
+        embed = nextcord.Embed(title=f"======= {user_stats['alliance'].upper()} =======", color=0x00ff00)
+        embed.add_field(name="Monarch", value=alliance_data['owner_username'], inline=True)
+        embed.add_field(name="Members", value=alliance_data['num_members'], inline=True)
+        embed.add_field(name="Battle Rating", value=alliance_data['alliance_battle_rating'], inline=True)
+        embed.add_field(name="Legion", value=alliance_data['alliance_army'], inline=True)
+
+        await ctx.send(embed=embed)
+
+
+#send a dm to the owner and mods and have the owner or mod accept the member
+#join should list a view of alliances to join
+#not sure if this function is as asynchronous as i think
+@client.command(name='join', aliases=['Join', 'JOIN'])
+async def join(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_join(ctx, user_id, arg)
+    if error == True:
+        await ctx.send(response)
+    else:
+        await ctx.send('A request has been sent to the owner and mods, please wait for an acceptance.')
+        alliance_data = utils.get_alliance_data(arg)
+        sovereigns = alliance_data['distinguished_members']
+        user_stats = utils.get_user_stats(user_id)
+        async def accept_callback(interaction):
+            print(' accept button clicked')
+            user = await client.fetch_user(user_id)
+            print(user_id)
+            user_dict = {
+                'username': utils.get_user_username(user_id),
+                'id': user_id
+            }
+            alliance_data['normal_members'].append(user_dict)
+            alliance_data['num_members'] += 1
+            alliance_data['alliance_battle_rating'] += user_stats['battle_rating']
+
+            user_stats['alliance'] = arg
+            utils.update_nation(user_id, user_stats)
+            utils.update_alliance_data(alliance_data['creator_id'], alliance_data)
+            await user.send(f'You have been accepted into {arg}')
+
+        async def deny_callback(interaction):
+            print('deny button clicked')
+            user = await client.fetch_user(user_id)
+            await user.send(f'You have been denied from {arg}')
+
+        new_member_view = AllianceAcceptanceView('Accept', 'Deny', user_id, alliance_data['creator_id'], 
+                                                 sovereigns, accept_callback, deny_callback)
+        
+        # user = await client.fetch_user(alliance_data['creator_id'])
+        user = await client.fetch_user(user_id) #for testing
+
+        embed = nextcord.Embed(title=f"======= {user_stats['name']} =======", color=0x00ff00)
+        embed.add_field(name="Leader", value=user_stats['username'], inline=True)
+        embed.add_field(name="Age", value=user_stats['age'], inline=True)
+        embed.add_field(name="Motto", value=user_stats['motto'], inline=True)
+        wonder_string = ''
+        for wonder in user_stats['owned_wonders']:
+            wonder_string += utils.format_string(wonder) + ', '
+        embed.add_field(name="Wonders", value=wonder_string, inline=True)
+        embed.add_field(name="Battle Rating", value=user_stats['battle_rating'], inline=True)
+
+        await user.send('A member applied', view=new_member_view, embed=embed)
+        
+        if sovereigns != []: #have soveriengs be able to accept or deny a member
+            for member in sovereigns:
+                user = await client.fetch_user(member)
+                await user.send('A member applied', view=new_member_view, embed=embed)
+
+@client.command(name='kick', aliases=['KICK', 'Kick'])
+async def kick(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    member_id = utils.get_user_id_from_username(arg)
+    sovereign_id = user_id
+    error, response = utils.check_kick_member(ctx, user_id, arg)
+    if error == True:
+        await ctx.send(response)
+    else:
+        utils.kick_member(sovereign_id, member_id)
+        user = await client.fetch_user(member_id) #for testing
+        await user.send(f'You have been kicked from your alliance LOL')
+        user = await client.fetch_user(sovereign_id) #for testing
+        await user.send(f'Member has been kicked')
+
+@client.command(name='promote', aliases=['Promote', 'PROMOTE'])
+async def promote(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_promote(ctx, user_id, arg)
+    if error == True:
+        await ctx.send(response)
+    else:
+        member_id = utils.get_user_id_from_username(arg)
+        utils.promote(member_id)
+        user = await client.fetch_user(member_id) #for testing
+        await user.send(f'You have been promoted within your alliance')
+        user = await client.fetch_user(user_id) #for testing
+        await user.send(f'Member has been promoted')
+
+@client.command(name='disband', aliases=['Disband', 'DISBAND'])
+async def disband(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_disband(ctx, user_id, arg)
+    if error == True:
+        await ctx.send(response)
+    else:
+        pass
+
+@client.command(name='send_resources', aliases=['SEND_RESOURCES', 'Send_Resources'])
+async def sned_resources(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_alliance(ctx, user_id, arg)
+    if error == True:
+        await ctx.send(response)
+    else:
+        pass
+
+       
+@client.command(name='contribute', aliases=['Contribute', 'CONTRIBUTE'])
+async def createalliance(ctx, arg1=None, arg2=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_contribute(ctx, user_id, arg1, arg2)
+    if error == True:
+        await ctx.send(response)
+    else:
+        user_stats = utils.get_user_stats(user_id)
+        unit = arg1
+        num_units = arg2
+        if arg2 == None:
+            num_units = 1
+        if arg2 == 'max':
+            num_units = utils.calculate_max(unit, 'unit', user_stats)
+
+        utils.contribute(user_id, unit, num_units)
+        embed = nextcord.Embed(description=f'```Successfully sent {num_units} {unit}s```', color=0x00ff00)
+        await ctx.send(embed=embed)
+
 
 client.run(TOKEN)
 

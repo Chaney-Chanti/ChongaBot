@@ -232,6 +232,7 @@ def check_age(ctx, user_id):
     if what_you_must_research != has_reasearched:
         return (True, '```You must research all technologies in your age before you advance```')
     return (False, 'OK')
+
 def check_in_battle_rating_range(attackerID, defenderID):
     player_one_rating = json.dumps(list(db.Nations.find({'_id': attackerID}, {'_id': 0}))[0]['battle_rating'])
     player_two_rating = json.dumps(list(db.Nations.find({'_id': defenderID}, {'_id': 0}))[0]['battle_rating'])
@@ -246,6 +247,97 @@ def check_research(ctx, user_id, arg1):
     if arg1 in get_users_researched_list(user_id):
         return (True, '```You have already researched this!```')
     return (False, 'OK')
+
+#check if player already has an alliance
+def check_createalliance(ctx, user_id, args):
+    user_stats = get_user_stats(user_id)
+    num_args = args.split()
+    if len(num_args) > 1:
+        return(True, f'Incorrect parameters. Format: {prefix}createalliance [name]')
+    elif len(args) > 25:
+        return(True, 'Nation name is too long!')
+    elif user_stats['alliance'] != '':
+        return(True, 'You already belong to an alliance, leave your current alliance to make one.')
+    elif alliance_exists(args):
+        return(True, 'That nation name already exists')
+    else:
+        return (False, 'OK')
+
+def check_alliance(ctx, user_id, args):
+    user_stats = get_user_stats(user_id)
+    if user_stats['alliance'] == '':
+        return(True, 'You do not have an alliance!')
+    else:
+        return (False, 'OK')
+
+    
+def check_kick_member(ctx, user_id, target_id):
+    user_stats = get_user_stats(user_id)
+    alliance = user_stats['alliance']
+    if not is_player_in_an_alliance(user_id):
+        return(True, 'You do not belong to an alliance')
+    elif not is_member_in_alliance(alliance, target_id):
+        return(True, 'This member does not belong to your alliance or is the owner')
+    elif not player_is_sovereign(alliance, user_id):
+        return(True, 'You are not a sovereign, you do not have kick powers')
+    elif player_is_sovereign(alliance, target_id):
+        return(True, 'This player is sovereign, only the owner can kick this person')
+    else:
+        return (False, 'OK')
+    
+def check_promote(ctx, user_id, target_id):
+    user_stats = get_user_stats(user_id)
+    alliance = user_stats['alliance']
+    alliance_stats = get_alliance_data(alliance)
+    if not is_player_in_an_alliance(user_id):
+        return(True, 'You do not belong to an alliance')
+    elif not is_member_in_alliance(alliance, target_id):
+        return(True, 'This member does not belong to your alliance or is the owner')
+    elif not player_is_alliance_leader(alliance_stats['creator_id'], user_id):
+        return(True, 'You are not the leader of an alliance')
+    elif player_is_sovereign(alliance, target_id):
+        return(True, 'This player is already sovereign, you cannot promote them again')
+    else:
+        return (False, 'OK')
+    
+def check_contribute(ctx, user_id, arg1, arg2):
+    print(arg1, arg2)
+    if arg1 != None:
+        num_args = arg1.lower().split()
+        if len(num_args) > 2:
+            return(True, f'Incorrect parameters. Format: {prefix}shop or {prefix}shop unit number')
+        if arg1 not in get_list_of_all_units():
+            return(True, 'Unit does not exist')
+        if arg2 != None and arg2.isnumeric() and int(arg2) <= 0:
+            return(True, 'You must specify a positive number of units')
+    return (False, 'OK')
+def is_player_in_an_alliance(user_id):
+    user_stats = get_user_stats(user_id)
+    if user_stats['alliance'] != '':
+        return True
+    return False
+
+def player_is_alliance_leader(alliance_creator_id, user_id):
+    return alliance_creator_id == user_id
+
+
+def player_is_sovereign(alliance_name, user_id):
+    alliance_data = get_alliance_data(alliance_name)
+    for member in alliance_data['distinguished_members']:
+        if user_id == member['id']:
+            return True
+    return False
+
+def is_member_in_alliance(alliance_name, user_id):
+    alliance_data = get_alliance_data(alliance_name)
+    members = alliance_data['normal_members'] + alliance_data['distinguished_members']
+    print(user_id)
+    print(members)
+    for member in members:
+        if user_id == member['id']:
+            return True
+    return False
+
 
 def player_exists_via_id(userID):
     return db.Nations.count_documents({'_id': userID}) > 0
@@ -263,6 +355,19 @@ def has_army(user_id):
         if unit in units and armyData[unit] > 0 :
             return True
     return False
+
+def check_join(ctx, user_id, args):
+    user_stats = get_user_stats(user_id)
+    print(args)
+    print(alliance_exists(args))
+    if user_stats['alliance'] != '':
+        return(True, 'You already belong to an alliance, leave your current alliance to join one.')
+    elif not alliance_exists(args):
+        return(True, 'Alliance does not exist bro.')
+    return (False, 'OK')
+
+def alliance_exists(name):
+    return db.Alliances .count_documents({'name': name}) > 0
             
 """GET DATA FUNCTIONS"""
 def get_message_info(message_data):
@@ -279,8 +384,11 @@ def get_user_wonders(user_id):
      return db.Nations.find_one({'_id': user_id}, {'owned_wonders': 1})['owned_wonders']
 
 def get_user_username(user_id):
-     return db.Nations.find_one({'_id': user_id}, {'username': 1})[0]['username']
+     return db.Nations.find_one({'_id': user_id}, {'username': 1})['username']
 
+def get_sovereigns(alliance):
+    return db.Alliance.find_one({'name': alliance}, {'distinguished_members': 1})
+    
 def get_user_stats(user_id):
     return list(db.Nations.aggregate([
         {'$match': {'_id': user_id}},
@@ -297,6 +405,7 @@ def get_user_stats(user_id):
         },
     ]))[0]
 
+
 def get_user_defense_buildings(user_id): # could be more dynamic
     return db.Nations.find({'_id': user_id}, {'_id': 0, 'keep': 1, 'castle': 1, 'fortress': 1, 'army_base': 1, 'planetary_fortress': 1})[0]
 
@@ -309,6 +418,9 @@ def get_list_of_units_by_age(era): #returns a list of the type of units availabl
     else:
         return []
     
+def get_alliance_data(alliance_name):
+    return db.Alliances.find_one({'name': alliance_name})
+
 def get_list_of_hero_units_by_era(era):
     hero_units = []
     if era in get_all_units_info():
@@ -1519,11 +1631,43 @@ def update_building(user_id, building, building_dict):
     return
 
 def update_nation(user_id, data):
-    db.Nations.update_one({'_id': user_id}, {'$set': data}) # switches false to true and level -> 1
+    db.Nations.update_one({'_id': user_id}, {'$set': data})
+
+def update_alliance_data(creator_id, data):
+    db.Alliances.update_one({'creator_id': creator_id}, {'$set': data})
 
 """GAME SERVICE FUNCTIONS """
 def battle_rating_rewards():
     pass
+
+def kick_member(sovereign_id, member_id):
+    sovereign_stats = get_user_stats(sovereign_id)
+    member_stats = get_user_stats(member_id)
+    alliance_data = get_alliance_data(sovereign_stats['alliance'])
+    alliance_data['num_members'] -= 1
+    alliance_data['alliance_battle_rating'] -= member_stats['battle_rating']
+    all_members = alliance_data['normal_members'] + alliance_data['distinguished_members']
+    for member in all_members:
+        if member['id'] == member_id:
+            all_members.remove(member)
+            break
+    member_stats = get_user_stats(member_id)
+    member_stats['alliance'] == ''
+
+    update_alliance_data(alliance_data['creator_id'], alliance_data) #update alliance data
+    update_nation(member_id, member_stats) #remove members alliance tag
+
+def promote(user_id, member_id):
+    user_stats = get_user_stats(user_id)
+    alliance_data = get_alliance_data(user_stats['alliance'])
+    member_username = get_user_username(member_id)
+    for member in alliance_data['normal_members'].copy():
+        if member['id'] == member_id:
+            alliance_data['normal_members'].remove(member)
+    alliance_data['distinguished_members'].append({
+        'username': member_username,
+        'id': member_id
+    })
 
 #returns the winner/loser, and casualties
 def pirate_attack_sequence(user_id, pirate_army):
@@ -1626,6 +1770,9 @@ def research(user_id, research_topic):
     return(True, f'Successfully researched {research_topic}')
 
 
+def contribute():    
+    pass
+
 def formulate_army(): # combine defense buldings with army units and shuffle them 
     pass
 
@@ -1663,9 +1810,9 @@ def award_tribute(winner_id, loser_id):
     db.Resources.update_one({'_id': loser_id}, {'$set': loser_resources})
     return winner_resources
 
-def generate_battle_summary(winner_name: str, loser_name: str, winner_username=None, loser_username=None, motto=None, 
-                            winner_battle_rating=None, loser_battle_rating=None, tribute,
-                            attacker_casualties: dict, defender_casualties: dict):
+def generate_battle_summary(winner_name: str, loser_name: str, tribute, attacker_casualties: dict, defender_casualties: dict,
+                            winner_username=None, loser_username=None, motto=None, 
+                            winner_battle_rating=None, loser_battle_rating=None):
     return {
         'winner': winner_name.upper(), # player, pirate, boss, alliance
         'loser': loser_name.upper(), # player, pirate, boss, alliance
@@ -1679,9 +1826,6 @@ def generate_battle_summary(winner_name: str, loser_name: str, winner_username=N
         'defender_casualties': defender_casualties,
     }
 
-# def generate_battle_summary(*args, **kwargs):
-
-#     summary = {}
 
 #attacker_army can be pvp, player attacking pirate
 #defender_army can be pvp, pirate army, boss army 
@@ -2100,5 +2244,3 @@ def remove_era_information(input_dict):
     for era, units in input_dict.items():
         result_dict.update(units)
     return result_dict
-
-
