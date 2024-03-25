@@ -18,6 +18,9 @@ from pytz import timezone
 from dotenv import load_dotenv
 import pprint
 
+import yfinance as yf
+
+
 load_dotenv()
 CONNECTIONPASSWORD = os.environ.get('MONGODBCONNECTION')
 mongoClient = pymongo.MongoClient(CONNECTIONPASSWORD)
@@ -137,7 +140,7 @@ def check_claim(userID):
 
 def check_shop(userID, arg1, arg2):
     #get number of arguments
-    print(arg1, arg2)
+    # print(arg1, arg2)
     if arg1 != None:
         num_args = arg1.lower().split()
         if not check_nation_exists(userID):
@@ -153,7 +156,7 @@ def check_shop(userID, arg1, arg2):
 def check_build(userID, arg1, arg2):
     age = get_age(userID)
     buildings = get_buildings_by_age(age)
-    print(arg1, arg2)
+    # print(arg1, arg2)
     if arg1 != None and arg2 != None:
         arg1 = arg1.lower()
         arg2 = arg2.lower()
@@ -272,45 +275,75 @@ def check_alliance(ctx, user_id, args):
 
     
 def check_kick_member(ctx, user_id, target_id):
+    # print('check_kick: ', user_id, target_id)
     user_stats = get_user_stats(user_id)
     alliance = user_stats['alliance']
+    alliance_data = get_alliance_data(alliance)
     if not is_player_in_an_alliance(user_id):
         return(True, 'You do not belong to an alliance')
     elif not is_member_in_alliance(alliance, target_id):
         return(True, 'This member does not belong to your alliance or is the owner')
-    elif not player_is_sovereign(alliance, user_id):
+    elif not player_is_sovereign(alliance, user_id) and not player_is_alliance_leader(alliance_data['creator_id'], user_id):
         return(True, 'You are not a sovereign, you do not have kick powers')
-    elif player_is_sovereign(alliance, target_id):
+    elif player_is_sovereign(alliance, target_id) and not player_is_alliance_leader(alliance_data['creator_id'], user_id):
         return(True, 'This player is sovereign, only the owner can kick this person')
+    else:
+        return (False, 'OK')
+
+def check_leave(ctx, user_id, arg):
+    if not is_player_in_an_alliance(user_id):
+        return(True, 'You do not belong to an alliance')
     else:
         return (False, 'OK')
     
 def check_promote(ctx, user_id, target_id):
     user_stats = get_user_stats(user_id)
     alliance = user_stats['alliance']
-    alliance_stats = get_alliance_data(alliance)
+    alliance_data = get_alliance_data(alliance)
+    target_id = get_user_id_from_username(target_id) # will need to change to account for @
     if not is_player_in_an_alliance(user_id):
         return(True, 'You do not belong to an alliance')
     elif not is_member_in_alliance(alliance, target_id):
         return(True, 'This member does not belong to your alliance or is the owner')
-    elif not player_is_alliance_leader(alliance_stats['creator_id'], user_id):
+    elif not player_is_alliance_leader(alliance_data['creator_id'], user_id):
         return(True, 'You are not the leader of an alliance')
-    elif player_is_sovereign(alliance, target_id):
+    elif player_is_sovereign(alliance, target_id) or player_is_alliance_leader(alliance_data['creator_id'], target_id):
         return(True, 'This player is already sovereign, you cannot promote them again')
     else:
         return (False, 'OK')
     
 def check_contribute(ctx, user_id, arg1, arg2):
-    print(arg1, arg2)
-    if arg1 != None:
-        num_args = arg1.lower().split()
-        if len(num_args) > 2:
-            return(True, f'Incorrect parameters. Format: {prefix}shop or {prefix}shop unit number')
+    user_army = get_user_army(user_id)
+    # print(arg1, arg2)
+    num_args = arg1.lower().split()
+    if arg2 != None:
+        if len(num_args) > 3:
+            return(True, f'Incorrect parameters. Format: {prefix}contribute unit number')
         if arg1 not in get_list_of_all_units():
             return(True, 'Unit does not exist')
-        if arg2 != None and arg2.isnumeric() and int(arg2) <= 0:
+        if arg2 != None and arg2.isnumeric() and int(arg2) <= 0 and arg2 != 'max' and arg2 != 'MAX':
             return(True, 'You must specify a positive number of units')
+        if user_army[arg1] <= 0:
+            return(True, 'You do not have any of this type of unit.')
     return (False, 'OK')
+
+def check_invest(ctx, user_id, arg1, arg2):
+    user_army = get_user_army(user_id)
+    stock = arg1
+    ticker = yf.Ticker(stock)
+    info = ticker.info
+    if user_army['warren_buffet'] <= 0:
+        return(True, 'You require Warren Buffet to use this command.')
+    if arg2 != 'max':
+        if not arg2.isdigit():
+            return(True, 'You must specify a number of stock to buy')
+        num_stock = int(arg2)
+        if num_stock <= 0:
+            return(True, 'You must specify a positive number of units')
+    if info['trailingPegRatio'] == None:
+        return(True, 'This Ticker does not exist')
+    return (False, 'OK')
+
 def is_player_in_an_alliance(user_id):
     user_stats = get_user_stats(user_id)
     if user_stats['alliance'] != '':
@@ -320,24 +353,29 @@ def is_player_in_an_alliance(user_id):
 def player_is_alliance_leader(alliance_creator_id, user_id):
     return alliance_creator_id == user_id
 
-
 def player_is_sovereign(alliance_name, user_id):
     alliance_data = get_alliance_data(alliance_name)
+    # print(alliance_name, user_id)
+    if user_id == alliance_data['creator_id']:
+        return True
+    # user_id = get_user_id_from_username(user_id) # may need to change this due to @'s
     for member in alliance_data['distinguished_members']:
         if user_id == member['id']:
+            print('player is sovereign')
             return True
+    print('player is not sovereign')
     return False
 
 def is_member_in_alliance(alliance_name, user_id):
     alliance_data = get_alliance_data(alliance_name)
+    # user_id = get_user_id_from_username(user_id) # may need to change this due to @'s
     members = alliance_data['normal_members'] + alliance_data['distinguished_members']
-    print(user_id)
-    print(members)
+    # print(members)
     for member in members:
+        # print(user_id, member['id'])
         if user_id == member['id']:
             return True
     return False
-
 
 def player_exists_via_id(userID):
     return db.Nations.count_documents({'_id': userID}) > 0
@@ -358,11 +396,11 @@ def has_army(user_id):
 
 def check_join(ctx, user_id, args):
     user_stats = get_user_stats(user_id)
-    print(args)
-    print(alliance_exists(args))
+    # print(args)
+    # print(alliance_exists(args))
     if user_stats['alliance'] != '':
         return(True, 'You already belong to an alliance, leave your current alliance to join one.')
-    elif not alliance_exists(args):
+    elif not alliance_exists(args) and args != None:
         return(True, 'Alliance does not exist bro.')
     return (False, 'OK')
 
@@ -375,6 +413,7 @@ def get_message_info(message_data):
     return (message_data.author.id, message_data.guild.id, message_data.author.name)
 
 def get_user_id_from_username(username):
+    # print('getting id from username',  username)
     return db.Nations.find({'username': username}, {'_id': 1})[0]['_id']
 
 def get_users_researched_list(user_id):
@@ -404,7 +443,6 @@ def get_user_stats(user_id):
             '$unwind': "$resources"
         },
     ]))[0]
-
 
 def get_user_defense_buildings(user_id): # could be more dynamic
     return db.Nations.find({'_id': user_id}, {'_id': 0, 'keep': 1, 'castle': 1, 'fortress': 1, 'army_base': 1, 'planetary_fortress': 1})[0]
@@ -483,12 +521,15 @@ def get_combat_wonders(users_wonders):
     combat_nerfing_wonders = []
     for wonder in users_wonders:
         if wonder_info[wonder]['civil'] == False:
-            print(wonder_info[wonder])
+            # print(wonder_info[wonder])
             if wonder_info[wonder]['type'] == 'buff':
                 combat_buffing_wonders.append(wonder)
             if wonder_info[wonder]['type'] == 'nerf':
                 combat_nerfing_wonders.append(wonder)
     return (combat_buffing_wonders, combat_nerfing_wonders)
+
+def get_list_of_alliances():
+    return list(db.Alliances.find({}))#.sort([('alliance_battle_rating', -1), ('name', -1)]))
 
 def get_hero_units():
     filtered_units = {}
@@ -695,9 +736,18 @@ def get_all_research_info(): # return just research info, costs are in knowledge
 def get_all_bosses():
     return {
         'ancient': {
-            'the_great_kingdom': {
+            'the_persian_empire': {
+                
+            },
+            'the_mongol_empire': {
 
-            }
+            },
+            'the_greek_empire': {
+
+            },
+            'the_roman_empire': {
+
+            },
         },
         'medieval': {
             'the_inquisitors': {
@@ -711,7 +761,7 @@ def get_all_bosses():
             },
         },
         'enlightenment': {
-            'vide_the_wicked': {
+            'the_british_empire': {
 
             },
             'paradis_island': {
@@ -750,383 +800,387 @@ def get_all_units_info(): # return all units including heroes infos
     return {
         'ancient': {
             'slinger': { 
-                'costs': {'food': 200},
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 150},
+                'rolls': {'lowerbound': 1, 'upperbound': 8},
                 'combat_type': 'attack',
                 'type': 'ranged',
                 'hero': False,
             },
             'clubman': { 
-                'costs': {'food': 100, 'timber': 100, },
-                'rolls': {'lowerbound': 1, 'upperbound': 10, },
+                'costs': {'food': 100, 'timber': 50},
+                'rolls': {'lowerbound': 1, 'upperbound': 8},
                 'combat_type': 'attack',
                 'type': 'melee',
                 'hero': False,
             },
             'spearman': { 
-                'costs': {'food': 300},
-                'rolls': {'lowerbound': 1, 'upperbound': 15, },
+                'costs': {'food': 200},
+                'rolls': {'lowerbound': 1, 'upperbound': 12},
                 'combat_type': 'attack',
                 'type': 'melee',
                 'hero': False,
             },
             'archer': { 
-                'costs': {'food': 400},
-                'rolls': {'lowerbound': 1, 'upperbound': 20, },
+                'costs': {'food': 300, 'timber': 50},
+                'rolls': {'lowerbound': 1, 'upperbound': 20},
                 'combat_type': 'attack',
                 'type': 'ranged',
                 'hero': False,
             },
             'horseman': { 
-                'costs': {'food': 400},
-                'rolls': {'lowerbound': 1, 'upperbound': 20, },
+                'costs': {'food': 400, 'timber': 100, 'metal': 50},
+                'rolls': {'lowerbound': 1, 'upperbound': 25},
                 'combat_type': 'attack',
                 'type': 'light',
                 'hero': False,
             },
             'catapult': { 
-                'costs': {'food': 400},
-                'rolls': {'lowerbound': 1, 'upperbound': 20, },
+                'costs': {'timber': 250, 'metal': 250},
+                'rolls': {'lowerbound': 1, 'upperbound': 35},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
             'cleopatra': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'costs': {'food': 1000, 'timber': 800, 'metal': 800},
+                'rolls': {'lowerbound': 20, 'upperbound': 60},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'ugly ass woman',
+                'desc': 'An iconic ruler of ancient Egypt.',
                 'hero': True
             },
             'alexander_the_great': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'costs': {'food': 1200, 'timber': 1000, 'metal': 1000},
+                'rolls': {'lowerbound': 20, 'upperbound': 50},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'conquered the world in his 20s yet ur here playing chongabot',
+                'desc': 'Legendary conqueror of the ancient world.',
                 'hero': True,
             },
             'ramesses_ii': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'costs': {'food': 1200, 'timber': 1000, 'metal': 1000},
+                'rolls': {'lowerbound': 20, 'upperbound': 50},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'ramjamnutslam',
+                'desc': 'The great pharaoh of Egypt.',
                 'hero': True,
             },
             'atilla_the_hun': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'costs': {'food': 1200, 'timber': 1000, 'metal': 1000},
+                'rolls': {'lowerbound': 20, 'upperbound': 50},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'chad',
+                'desc': 'Legendary Hunnic warrior.',
                 'hero': True,
-
             },
             'caesar': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'costs': {'food': 1500, 'timber': 1200, 'metal': 1200},
+                'rolls': {'lowerbound': 30, 'upperbound': 60},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'CAAEEEEESAAAAEEEEERRRRRR',
+                'desc': 'Renowned Roman general and statesman.',
                 'hero': True,
             },
         },
         'medieval': {
             'knight': { 
-                'costs': {'food': 1000, 'metal': 1000, },
-                'rolls': {'lowerbound': 10, 'upperbound': 20, },
+                'costs': {'food': 400, 'metal': 400},
+                'rolls': {'lowerbound': 15, 'upperbound': 30},
                 'combat_type': 'attack',
                 'type': 'melee',
                 'hero': False,
             },
             'crossbowman': { 
-                'costs': {'food': 1000, 'timber': 500, },
-                'rolls': {'lowerbound': 10, 'upperbound': 30, },
+                'costs': {'food': 350, 'timber': 300},
+                'rolls': {'lowerbound': 15, 'upperbound': 35},
                 'combat_type': 'attack',
                 'type': 'ranged',
                 'hero': False,
             },
             'cavalry': { 
-                'costs': {'food': 1500, 'metal': 1500, },
-                'rolls': {'lowerbound': 10, 'upperbound': 35, },
+                'costs': {'food': 600, 'metal': 600},
+                'rolls': {'lowerbound': 15, 'upperbound': 40},
                 'combat_type': 'attack',
                 'type': 'light',
                 'hero': False,
             },
             'trebuchet': { 
-                'costs': {'timber': 3000, 'metal': 3000, },
-                'rolls': {'lowerbound': 10, 'upperbound': 45, },
+                'costs': {'timber': 800, 'metal': 800},
+                'rolls': {'lowerbound': 15, 'upperbound': 50},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
             'war_elephant': { 
-                'costs': {'food': 5000, 'metal': 3000, },
-                'rolls': {'lowerbound': 20, 'upperbound': 80, },
+                'costs': {'food': 1500, 'metal': 1000},
+                'rolls': {'lowerbound': 25, 'upperbound': 70},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
              'king_arthur': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 20, 'upperbound': 100},
                 'combat_type': 'attack',
-                'desc': 'timothee chalamet',
+                'desc': 'Timothee Chalamet',
                 'type': 'melee',
                 'hero': True,
             },
             'genghis_khan': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 20, 'upperbound': 100},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'buff asian guy with beard',
+                'desc': 'Mongol conqueror.',
                 'hero': True,
             },
             'william_the_conqueror': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 20, 'upperbound': 100},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'british guy',
+                'desc': 'Norman King of England.',
                 'hero': True,
             },
             'marco_polo': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 20, 'upperbound': 100},
                 'combat_type': 'buffer',
                 'type': None,
-                'desc': '1.25x the exploration value',
+                'desc': 'Doubles the amount of resources gained from befriending another nation',
                 'hero': True,
             },
             'robinhood': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 20, 'upperbound': 100,},
                 'combat_type': 'attack',
                 'type': 'ranged',
-                'desc': 'steal an xtra 10% from enemies after attacking',
+                'desc': 'Steal an xtra 10% of resources from enemies you attack',
                 'hero': True,
             },
             'leonardo_da_vinci': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 1, 'upperbound': 5},
                 'combat_type': 'buffer',
                 'type': None,
-                'desc': 'reduce cost of researching by 1.25x',
+                'desc': 'Reduce the cost of research by 1.25x',
                 'hero': True,
             },
         },
         'enlightenment': {
             'minutemen':{ 
-                'costs': {'food': 2000, 'metal': 2000, },
-                'rolls': {'lowerbound': 20, 'upperbound': 40, },
+                'costs': {'food': 1500, 'metal': 1500},
+                'rolls': {'lowerbound': 35, 'upperbound': 45},
                 'combat_type': 'attack',
                 'type': 'ranged',
                 'hero': False,
             },
             'general': { 
-                'costs': {'food': 2000, 'metal': 3000, },
-                'rolls': {'lowerbound': 20, 'upperbound': 50, },
+                'costs': {'food': 1500, 'metal': 2000},
+                'rolls': {'lowerbound': 35, 'upperbound': 55},
                 'combat_type': 'attack',
                 'type': 'light',
                 'hero': False,
             },
             'cannon': { 
-                'costs': {'timber': 2000, 'metal': 5000, },
-                'rolls': {'lowerbound': 30, 'upperbound': 90, },
+                'costs': {'timber': 1500, 'metal': 4000},
+                'rolls': {'lowerbound': 45, 'upperbound': 100},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
-            'napolean': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+            'napoleon': {
+                'rolls': {'lowerbound': 50, 'upperbound': 80},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'french guy',
+                'desc': 'French military and political leader.',
                 'hero': True,
             },
             'king_henry_viii': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 50, 'upperbound': 80},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'english guy',
+                'desc': 'Tudor King of England.',
                 'hero': True,
             },
             'george_washington': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 50, 'upperbound': 80},
                 'combat_type': 'attack',
                 'type': 'light',
-                'desc': 'british guy posing as an american',
+                'desc': 'First President of the United States.',
                 'hero': True,
             },
             'louis_xiv': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 50, 'upperbound': 80},
                 'combat_type': 'attack',
                 'type': 'light',
-                'desc': 'another french guy',
+                'desc': 'Sun King of France.',
                 'hero': True,
             },
             'armada': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 100, 'upperbound': 500},
                 'combat_type': 'attack',
                 'type': 'heavy',
-                'desc': 'how many ship?',                  
+                'desc': 'Naval fleet of Spain.',
                 'hero': True,
             }
         },
         'modern': {
             'commando': { 
-                'costs': {'food': 2000, 'metal': 1000, 'wealth': 500},
-                'rolls': {'lowerbound': 40, 'upperbound': 60, },
+                'costs': {'food': 2000, 'metal': 800, 'wealth': 400},
+                'rolls': {'lowerbound': 100, 'upperbound': 200},
                 'combat_type': 'attack',
                 'type': 'melee',
                 'hero': False,
             },
             'infantry': { 
-                'costs': {'food': 2000, 'metal': 1000, 'wealth': 500},
-                'rolls': {'lowerbound': 40, 'upperbound': 60, },
+                'costs': {'food': 2000, 'metal': 800, 'wealth': 400},
+                'rolls': {'lowerbound': 100, 'upperbound': 250},
                 'combat_type': 'attack',
                 'type': 'ranged',
                 'hero': False,
             },
             'tank': { 
-                'costs': {'metal': 5000, 'wealth': 5000, 'oil': 5000},
-                'rolls': {'lowerbound': 100, 'upperbound': 200, },
+                'costs': {'metal': 3000, 'wealth': 3000, 'oil': 3000},
+                'rolls': {'lowerbound': 200, 'upperbound': 250},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
             'fighter': { 
-                'costs': {'metal': 6000, 'wealth': 6000, 'oil': 6000},
-                'rolls': {'lowerbound': 100, 'upperbound': 250, },
+                'costs': {'metal': 4000, 'wealth': 4000, 'oil': 4000},
+                'rolls': {'lowerbound': 200, 'upperbound': 300},
                 'combat_type': 'attack',
                 'type': 'light',
                 'hero': False,
             },
             'bomber': { 
-                'costs': {'metal': 8000, 'wealth': 8000, 'oil': 8000},
-                'rolls': {'lowerbound': 120, 'upperbound': 270, },
+                'costs': {'metal': 6000, 'wealth': 6000, 'oil': 6000},
+                'rolls': {'lowerbound': 150, 'upperbound': 500},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
             'submarine': { 
-                'costs': {'metal': 10000, 'wealth': 10000, 'oil': 10000},
-                'rolls': {'lowerbound': 200, 'upperbound': 400, },
+                'costs': {'metal': 8000, 'wealth': 8000, 'oil': 8000},
+                'rolls': {'lowerbound': 300, 'upperbound': 500},
                 'combat_type': 'attack',
                 'type': 'light',
                 'hero': False,
             },
             'battleship': { 
                 'costs': {'metal': 10000, 'wealth': 10000, 'oil': 10000},
-                'rolls': {'lowerbound': 200, 'upperbound': 400, },
+                'rolls': {'lowerbound': 400, 'upperbound': 600},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
             'aircraft_carrier': { 
                 'costs': {'metal': 20000, 'wealth': 20000, 'oil': 20000},
-                'rolls': {'lowerbound': 500, 'upperbound': 1000, },
+                'rolls': {'lowerbound': 500, 'upperbound': 1000},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
             'icbm': { 
                 'costs': {'metal': 50000, 'wealth': 50000, 'oil': 50000},
-                'rolls': {'lowerbound': 1000, 'upperbound': 2000, },
+                'rolls': {'lowerbound': 2000, 'upperbound': 4000},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
             'albert_einstein': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 1, 'upperbound': 5},
                 'combat_type': 'buffer',
                 'type': 'melee',
-                'desc': 'cheapens the cost of research by 1.25x',
+                'desc': 'Cheapens the cost of research by 2x',
                 'hero': True,
             },
             'mao_zedong': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 3000, 'upperbound': 5000},
                 'combat_type': 'attack',
                 'type': 'melee',
-                'desc': 'uuh ur chinese',
+                'desc': 'steal an xtra 20% of resources from enemies',
                 'hero': True,
             },
             'winston_churchill': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 3000, 'upperbound': 5000},
                 'combat_type': 'attack',
                 'type': 'light',
-                'desc': 'british guy in a tank',
+                'desc': 'British Prime Minister during WW2.',
                 'hero': True,
             },
             'oppenheimer': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 1, 'upperbound': 5},
                 'combat_type': 'buffer',
                 'type': 'melee',
-                'desc': 'allows you to buy the ICBM',
+                'desc': 'You can buy the ICBM',
                 'hero': True,
             },
             'warren_buffet': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 1, 'upperbound': 5},
                 'combat_type': 'buffer',
                 'type': 'melee',
-                'desc': 'Gives you access to the c!invest command allowing you to invest in the irl stock market',
+                'desc': 'Gives you access to the c!invest command to invest in the irl stock market',
                 'hero': True,
             },
         },
         'space' : {
             'shocktrooper': { 
-                'costs': {'food': 6000, 'metal': 6000, 'wealth': 6000},
-                'rolls': {'lowerbound': 100, 'upperbound': 250, },
+                'costs': {'food': 5000, 'metal': 5000, 'wealth': 5000},
+                'rolls': {'lowerbound': 400, 'upperbound': 500},
                 'combat_type': 'attack',
                 'type': 'ranged',
                 'hero': False,
             },
             'lasercannon': { 
-                'costs': {'metal': 10000, 'wealth': 10000, 'oil': 10000},
-                'rolls': {'lowerbound': 250, 'upperbound': 450, },
+                'costs': {'metal': 8000, 'wealth': 8000, 'oil': 8000},
+                'rolls': {'lowerbound': 400, 'upperbound': 800},
                 'combat_type': 'attack',
                 'type': 'light',
                 'hero': False,
             },
             'thor': { 
-                'costs': {'metal': 10000, 'wealth': 10000, 'oil': 10000},
-                'rolls': {'lowerbound': 250, 'upperbound': 450, },
+                'costs': {'metal': 8000, 'wealth': 8000, 'oil': 8000},
+                'rolls': {'lowerbound': 700, 'upperbound': 1000},
                 'combat_type': 'attack',
                 'type': 'light',
                 'hero': False,
             },
             'starfighter': { 
                 'costs': {'metal': 50000, 'wealth': 50000, 'oil': 50000},
-                'rolls': {'lowerbound': 750, 'upperbound': 1500, },
+                'rolls': {'lowerbound': 1000, 'upperbound': 1000},
                 'combat_type': 'attack',
                 'type': 'light',
                 'hero': False,
             },
             'battlecruiser': { 
                 'costs': {'metal': 500000, 'wealth': 500000, 'oil': 500000},
-                'rolls': {'lowerbound': 5000, 'upperbound': 10000, },
+                'rolls': {'lowerbound': 7500, 'upperbound': 15000},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
             'deathstar': { 
                 'costs': {'metal': 5000000, 'wealth': 5000000, 'oil': 5000000},
-                'rolls': {'lowerbound': 50000, 'upperbound': 1000000, },
+                'rolls': {'lowerbound': 75000, 'upperbound': 150000},
                 'combat_type': 'attack',
                 'type': 'heavy',
                 'hero': False,
             },
             'cad_bane': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 10000, 'upperbound': 20000},
                 'combat_type': 'attack',
-                'type': 'heavy',
-                'desc': 'doubles the amount of merceneries you can hire',
+                'type': 'melee',
+                'desc': 'Double hired mercenary count.',
                 'hero': True,
             },
             'the_malevolence': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 10000, 'upperbound': 25000},
                 'combat_type': 'attack',
-                'type': 'melee',
-                'desc': 'green midget with a lightsaber',
+                'type': 'heavy',
+                'desc': 'Sinister Sith ship.',
                 'hero': True,
             },
             'space_battleship_yamato': {
-                'rolls': {'lowerbound': 1, 'upperbound': 5, },
+                'rolls': {'lowerbound': 10000, 'upperbound': 25000},
                 'combat_type': 'attack',
                 'type': 'heavy',
-                'desc': 'beeg sheep',
+                'desc': 'Iconic spaceship.',
                 'hero': True,
             },
         },
@@ -1276,14 +1330,19 @@ def get_user_army(user_id):
     return list(db.Army.find({'_id': user_id}, {'_id': 0, 'name': 0, 'username': 0}))[0]
 
 def get_rankings(): #Must change to be only top 50
-    return list(db.Nations.find().sort([('battle_rating', -1), ('_id', -1)]).limit(10))
+    user_rankings = list(db.Nations.find().sort([('battle_rating', -1), ('_id', -1)]).limit(10))
+    for user in user_rankings:
+        # print(user)
+        if user['username'] == 'Pirates':
+            user_rankings.remove(user)
+    return user_rankings
 
 def get_user_rank(user_id): #Must change to be only top 50
-    allPlayersSorted = list(db.Nations.find().sort([('battle_rating', -1), ('_id', -1)]).limit(10))
-    numPlayers = db.Nations.count_documents({})
-    for i in range(len(allPlayersSorted)):
-        if allPlayersSorted[i]['_id'] == user_id:
-            return i+1, numPlayers
+    all_players_sorted = list(db.Nations.find().sort([('battle_rating', -1), ('_id', -1)]).limit(10))
+    num_players = db.Nations.count_documents({})
+    for i in range(len(all_players_sorted)):
+        if all_players_sorted[i]['_id'] == user_id:
+            return i+1, num_players
 
 def get_age(user_id):
     return list(db.Nations.find({'_id': user_id}, {'_id': 0}))[0]['age']
@@ -1297,7 +1356,7 @@ def get_victims(user_id):
     attackable_players = []
     for player in player_list:
         if player['battle_rating'] in range(lower_range, upper_range) and not has_shield(player['_id'], time.time()):
-            if not player['_id'] == user_id: #Exclude self player
+            if not player['_id'] == user_id and not player['_id'] == 'pirate_user_id' : #Exclude self player
                 attackable_players.append(player['username'])
     return attackable_players
 
@@ -1306,12 +1365,17 @@ def get_buildings_by_age(age): #returns a list of the buildings in an era, for t
     return all_building_info[age].keys()
 
 def get_list_of_defense_buildings():
+    all_building_infos = get_all_building_infos()
     defense_buildings = []
-    building_info = get_all_building_infos()
-    for era in building_info.values():
-        for building in era.values():
-            if building['type'] == 'defense':
-                defense_buildings.append(list(building.keys())[0])
+
+    for era, buildings in all_building_infos.items():
+        for building, info in buildings.items():
+            if info['type'] == 'defense':
+                defense_buildings.append(building)
+
+    print(defense_buildings)
+    return defense_buildings
+
 
 def get_all_building_infos():
     return {
@@ -1621,10 +1685,9 @@ def update_units(user_id, unit, num_units):
     return 
 
 def update_army(user_id, army_dict):
-    print(army_dict)
+    # print(army_dict)
     db.Army.update_many({'_id': user_id}, {'$set': army_dict})
     return
-
 
 def update_building(user_id, building, building_dict):
     db.Nations.update_one({'_id': user_id}, {'$set': {building: building_dict[building]}}) # switches false to true and level -> 1
@@ -1636,9 +1699,32 @@ def update_nation(user_id, data):
 def update_alliance_data(creator_id, data):
     db.Alliances.update_one({'creator_id': creator_id}, {'$set': data})
 
+def update_battle_rating(user_id, user_stats):
+    if user_stats['battle_rating'] < 0:
+        user_stats['battle_rating'] = 0
+    db.Nations.update_one({'_id': user_id}, {'$set': user_stats})
+    print(user_id, user_stats)
+
+
 """GAME SERVICE FUNCTIONS """
 def battle_rating_rewards():
     pass
+
+def invest(user_id, stock, num_stock):
+    user_stats = get_user_stats(user_id)
+    current_stock_price = yf.Ticker(stock).info['ask']
+    total_cost = math.ceil(current_stock_price * num_stock)
+    user_stats['resources']['wealth'] -= total_cost
+    user_stats['resources'][stock] += num_stock
+    update_resources(user_id, user_stats['resources'])
+
+def sell(user_id, stock, num_stock):
+    user_stats = get_user_stats(user_id)
+    current_stock_price = yf.Ticker(stock).info['ask']
+    total_cost = math.ceil(current_stock_price * num_stock)
+    user_stats['resources']['wealth'] += total_cost
+    user_stats['resources'][stock] -= num_stock
+    update_resources(user_id, user_stats['resources'])
 
 def kick_member(sovereign_id, member_id):
     sovereign_stats = get_user_stats(sovereign_id)
@@ -1646,14 +1732,10 @@ def kick_member(sovereign_id, member_id):
     alliance_data = get_alliance_data(sovereign_stats['alliance'])
     alliance_data['num_members'] -= 1
     alliance_data['alliance_battle_rating'] -= member_stats['battle_rating']
-    all_members = alliance_data['normal_members'] + alliance_data['distinguished_members']
-    for member in all_members:
-        if member['id'] == member_id:
-            all_members.remove(member)
-            break
+    alliance_data['normal_members'] = [member for member in alliance_data['normal_members'] if member['id'] != member_id]
+    alliance_data['distinguished_members'] = [member for member in alliance_data['distinguished_members'] if member['id'] != member_id]
     member_stats = get_user_stats(member_id)
-    member_stats['alliance'] == ''
-
+    member_stats['alliance'] = ''
     update_alliance_data(alliance_data['creator_id'], alliance_data) #update alliance data
     update_nation(member_id, member_stats) #remove members alliance tag
 
@@ -1661,99 +1743,24 @@ def promote(user_id, member_id):
     user_stats = get_user_stats(user_id)
     alliance_data = get_alliance_data(user_stats['alliance'])
     member_username = get_user_username(member_id)
-    for member in alliance_data['normal_members'].copy():
-        if member['id'] == member_id:
-            alliance_data['normal_members'].remove(member)
+    alliance_data['normal_members'] = [member for member in alliance_data['normal_members'] if member['id'] != member_id]
     alliance_data['distinguished_members'].append({
         'username': member_username,
         'id': member_id
     })
+    update_alliance_data(alliance_data['creator_id'], alliance_data)
 
-#returns the winner/loser, and casualties
-def pirate_attack_sequence(user_id, pirate_army):
-    attacker_army = list(db.Army.find({'_id': user_id}, {'_id': 0}))[0]
-    attacker_stats = get_user_stats(user_id)
-
-    attacker_army_key_list = list(attacker_army.keys())
-    defender_army_key_list = list(pirate_army.keys())
-    unit_dice_rolls = get_unit_dice_rolls()
-    attacker_casualties = {}
-    defender_casualties = {}
-    i = 2
-    j = 0 # becuase pirates dont have data like a real user
-
-
-
-    #by default set attacker to winner in the case the defender has no army
-    winner = ['user', attacker_casualties, attacker_army]
-    loser = ['pirates', defender_casualties, pirate_army]
-    
-    while i < len(attacker_army_key_list) and j < len(defender_army_key_list):
-        attacker_unit_count = attacker_army[attacker_army_key_list[i]]
-        defender_unit_count = pirate_army[defender_army_key_list[j]]
-        if attacker_unit_count == 0: #attacker has no units left, for the specific unit
-            i += 1 #move to next unit in the list
-        elif defender_unit_count == 0: #defender has no units left, for the specific unit
-            j += 1 #move to next unit in the list
-        else: #combat simulation
-            attacker_unit_type = attacker_army_key_list[i]
-            defender_unit_type = defender_army_key_list[j]
-        
-            attackerRoll = random.randint(unit_dice_rolls[attacker_unit_type]['lowerbound'], unit_dice_rolls[attacker_unit_type]['upperbound'])
-            defenderRoll = random.randint(unit_dice_rolls[defender_unit_type]['lowerbound'], unit_dice_rolls[defender_unit_type]['upperbound'])
-
-            # #roll processing
-            # if attacker_stats['wonder'] == 'colloseum' and unit_dice_rolls[attacker_army_key_list[i]] not in ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']:
-            #     attackerRoll *= 1.25
-            # if attacker_stats['wonder'] == 'the_great_wall_of_chonga' and unit_dice_rolls[attacker_army_key_list[i]] in ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']:
-            #     attackerRoll *= 1.25
-            # if attacker_stats['wonder'] == 'supercollider' and unit_dice_rolls[attacker_army_key_list[i]] == 'icbm':
-            #     defenderRoll *= .25
-        
-            if attackerRoll > defenderRoll:
-                #update casualties
-                if defender_army_key_list[j] in defender_casualties:
-                    defender_casualties[defender_army_key_list[j]] += 1 #increment casualty counter
-                else: 
-                    defender_casualties[defender_army_key_list[j]] = 1 #set casualty counter if new unit
-                pirate_army[defender_army_key_list[j]] -= 1 #reduce army by lost unit
-                winner = [attacker_stats['name'], attacker_casualties, pirate_army]
-                loser = ['PIRATES', defender_casualties, pirate_army]
-            elif attackerRoll < defenderRoll:
-                #update casualties
-                if attacker_army_key_list[i] in attacker_casualties:
-                    attacker_casualties[attacker_army_key_list[i]] += 1 #increment casualty counter
-                else: 
-                    attacker_casualties[attacker_army_key_list[i]] = 1 #set casualty counter if new unit
-                attacker_army[attacker_army_key_list[i]] -= 1 #reduce army by lost unit
-                winner = ['PIRATES', defender_casualties, pirate_army]
-                loser = [attacker_stats['name'], attacker_casualties, attacker_army]
-
-            total_bonus_loot = 10000
-
-    # for resource in loser_resources:
-    #     if resource in res_list:
-    #         amount_taken = math.ceil(loser_resources[resource] * steal_percentage) #steal 10%
-    #         winner_resources[resource] = winner_resources[resource] + (amount_taken * bonus_loot_multiplier)
-    #         loser_resources[resource] = loser_resources[resource] - amount_taken
-    #         total_bonus_loot[resource] = (amount_taken)
-
-    # db.Resources.update_one({'_id': winner[0]}, {'$set': winner_resources})
-    # db.Resources.update_one({'_id': loser[0]}, {'$set': loser_resources})
-
-    if winner[0] == attacker_stats['name']:
-        db.Army.update_one({'_id': user_id}, {'$set': winner[2]})
-    else:
-        db.Army.update_one({'_id': user_id}, {'$set': loser[2]})
-
-    battle_summary = {
-        'winner': winner[0].upper(),
-        'loser': loser[0].upper(),
-        'tribute': total_bonus_loot,
-        'attacker_casualties': str(attacker_casualties),
-        'pirate_casualties': str(defender_casualties),
-    }
-    return battle_summary
+def leave(user_id):
+    user_stats = get_user_stats(user_id)
+    alliance_data = get_alliance_data(user_stats['alliance'])
+    alliance_data['num_members'] -= 1
+    alliance_data['alliance_battle_rating'] -= user_stats['battle_rating']
+    alliance_data['normal_members'] = [member for member in alliance_data['normal_members'] if member['id'] != user_id]
+    alliance_data['distinguished_members'] = [member for member in alliance_data['normaldistinguished_members'] if member['id'] != user_id]
+    user_stats['alliance'] = ''
+    update_alliance_data(alliance_data['creator_id'], alliance_data) #update alliance data
+    update_nation(user_id, user_stats) #remove members alliance tag
+    # print('updated information')
 
 def research(user_id, research_topic):
     age = get_age(user_id)
@@ -1762,7 +1769,7 @@ def research(user_id, research_topic):
     resource_rate = research_info[research_topic]['resource_rate']
     if user_resources['knowledge'] - research_info[research_topic]['costs'] < 0:
         return(False, 'You did not have enough knowledge loser')
-    print(user_resources, resource_rate)
+    # print(user_resources, resource_rate)
     update_resources(user_id, {'knowledge': user_resources['knowledge'] - research_info[research_topic]['costs']})
     new_rate = math.ceil(user_resources[resource_rate] * research_info[research_topic]['bonus'])
     update_resource_rate(user_id, {resource_rate: new_rate})
@@ -1770,8 +1777,14 @@ def research(user_id, research_topic):
     return(True, f'Successfully researched {research_topic}')
 
 
-def contribute():    
-    pass
+def contribute(user_id, unit, num_units):
+    user_stats = get_user_stats(user_id)
+    user_army = get_user_army(user_id)
+    alliance_data = get_alliance_data(user_stats['alliance'])
+    alliance_data['alliance_army'][unit] = num_units
+    update_alliance_data(alliance_data['creator_id'], alliance_data)
+    user_army[unit] -= int(num_units)
+    update_army(user_id, user_army)
 
 def formulate_army(): # combine defense buldings with army units and shuffle them 
     pass
@@ -1783,10 +1796,8 @@ def form_pvp_armies(attacker_id, defender_id):
     defender_army = get_user_army(defender_id)
     defender_stats = get_user_stats(defender_id)
     defender_buildings = get_user_defense_buildings(defender_id)
-
     attacker_army_combined = {**attacker_army, **attacker_buildings}
     defender_army_combined = {**defender_army, **defender_buildings}
-
     return (attacker_stats, attacker_army_combined, defender_stats, defender_army_combined)
 
 def form_attacker_army(attacker_id):
@@ -1802,13 +1813,13 @@ def award_tribute(winner_id, loser_id):
     total_bonus_loot = {} #used for summary
     for resource in loser_resources:
         if resource in res_list:
-            amount_taken = math.ceil(loser_resources[resource] * steal_percentage) #steal 10%
+            amount_taken = math.ceil(loser_resources[resource] * steal_percentage)
             winner_resources[resource] = winner_resources[resource] + (amount_taken * bonus_loot_multiplier)
             loser_resources[resource] = loser_resources[resource] - amount_taken
-            total_bonus_loot[resource] = (amount_taken)
+            total_bonus_loot[resource] = (amount_taken * bonus_loot_multiplier)
     db.Resources.update_one({'_id': winner_id}, {'$set': winner_resources})
     db.Resources.update_one({'_id': loser_id}, {'$set': loser_resources})
-    return winner_resources
+    return total_bonus_loot
 
 def generate_battle_summary(winner_name: str, loser_name: str, tribute, attacker_casualties: dict, defender_casualties: dict,
                             winner_username=None, loser_username=None, motto=None, 
@@ -1841,11 +1852,10 @@ def attack_sequence(attacker_stats, attacker_army, defender_stats, defender_army
     while i < len(attacker_army_key_list) and j < len(defender_army_key_list):
         attacker_unit_count = attacker_army[attacker_army_key_list[i]]
         defender_unit_count = defender_army[defender_army_key_list[j]]
-        # print('DEBUG', 'ATTACKER_UNIT_COUNT:', attacker_unit_count, 'DEFENDER_UNIT_COUNT', defender_unit_count)
         if attacker_unit_count == 0:
-            i += 1
+            i += 1 # go to the next unit
         elif defender_unit_count == 0:
-            j += 1
+            j += 1 # go to the next unit
         else:
             attacker_unit = attacker_army_key_list[i]
             defender_unit = defender_army_key_list[j]
@@ -1870,47 +1880,46 @@ def attack_sequence(attacker_stats, attacker_army, defender_stats, defender_army
                     attacker_casualties[attacker_army_key_list[i]] = 1
                 attacker_army[attacker_army_key_list[i]] -= 1
 
-    if j > i:
-        winner = 'attacker'
     if i < j:
+        winner = 'attacker'
+    elif i > j:
         winner = 'defender'
 
     return (attacker_army, attacker_casualties, defender_army, defender_casualties, winner)
 
 def roll_modifier(attacker_stats, attacker_roll, attacker_type, defender_stats, defender_roll, defender_type):
     wonder_info = get_list_of_wonder_info()
-    unit_counters = get_unit_counters
+    unit_counters = get_unit_counters()
     attacker_buff_wonders, attacker_nerf_wonders = get_combat_wonders(attacker_stats['owned_wonders'])
     defender_buff_wonders, defender_nerf_wonders = get_combat_wonders(defender_stats['owned_wonders'])
     for wonder in attacker_buff_wonders + defender_nerf_wonders:
         attacker_roll *= wonder_info[wonder]['bonus']
     for wonder in defender_buff_wonders + attacker_nerf_wonders:
         defender_roll *= wonder_info[wonder]['bonus']
+    #print(defender_type)
+    #print(unit_counters[defender_type])
     if defender_type in unit_counters[attacker_type]:
         attacker_roll *= 1.2
     if attacker_type in unit_counters[defender_type]:
-        defender_type *= 1.2
+        defender_roll *= 1.2
     return(attacker_roll, defender_roll) 
 
 def extract_wonder_names(data):
     wonders_list = []
-
     for era, wonders in data.items():
         for wonder in wonders:
             wonders_list.append(wonder)
-
     return wonders_list
 
+# def extract_hero_names(data):
+#     heroes_list = []
 
-def extract_hero_names(data):
-    heroes_list = []
+#     for era, era_data in data.items():
+#         for hero_type, heroes in era_data.items():
+#             for hero_name in heroes.keys():
+#                 heroes_list.append(hero_name)
 
-    for era, era_data in data.items():
-        for hero_type, heroes in era_data.items():
-            for hero_name in heroes.keys():
-                heroes_list.append(hero_name)
-
-    return heroes_list
+#     return heroes_list
 
 def get_exploration_options(user_id, user_army):
     user_age = get_age(user_id)
@@ -1929,7 +1938,7 @@ def get_exploration_options(user_id, user_army):
                     }
                 elif 'free_units' in event:
                     unit = random.choice(event['free_units'][user_age])
-                    print(unit)
+                    # print(unit)
                     event_data = {
                         'type': 'free_units',
                         'label': 'Hire Merceneries',
@@ -1980,8 +1989,7 @@ def get_exploration_options(user_id, user_army):
                         'data': wonder,
                     }
                 elif 'pirates' in event:
-                    users_units = get_list_of_hero_units_by_era(user_age)
-                    # users_units.remove('heroes')
+                    users_units = get_list_of_units_by_age(user_age)
                     non_combat_units = ['keep', 'castle', 'fortress', 'bunker', 'planetary_fortress']
                     for unit in non_combat_units:
                         if unit in users_units:
@@ -2022,7 +2030,6 @@ def validate_execute_shop(userID, unit, num_units):
 
 def execute_explore(user_id, selected_exploration_option):
     if selected_exploration_option['type'] == 'free_resources':
-        print('Giving Free Resources')
         data = get_user_stats(user_id)
         for resource in ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']:
             new_total_res = data['resources'][resource] + selected_exploration_option['data']
@@ -2035,13 +2042,12 @@ def execute_explore(user_id, selected_exploration_option):
             name='Gifts Received',
             value=f'{selected_exploration_option["data"]} (of every resource)',
         )
-
     if selected_exploration_option['type'] == 'free_units':
-        print('Giving Free Units')
         user_army = get_user_army(user_id)
-        pprint.pprint(user_army)
-        print(selected_exploration_option)
+        user_stats = user_stats(user_id)
         num_units_inc = user_army[selected_exploration_option['data']['unit']] + selected_exploration_option['data']['num_units']
+        if 'cad_bane' in user_stats['owned_heroes']:
+            num_units_inc *= 2
         db.Army.update_one({'_id': user_id}, {'$set': {selected_exploration_option['data']['unit']: num_units_inc}})
         return nextcord.Embed(
             title='Exploration Result',
@@ -2051,9 +2057,7 @@ def execute_explore(user_id, selected_exploration_option):
             name='Recruited',
             value=f'{selected_exploration_option["data"]["num_units"]} {selected_exploration_option["data"]["unit"]}s',
         )
-
     if selected_exploration_option['type'] == 'trade_route':
-        print('Giving Free Trade Route')
         country = random.choice(countries)
         data = get_user_stats(user_id)
         for resource_rate in ['food_rate', 'timber_rate', 'metal_rate', 'wealth_rate', 'oil_rate', 'knowledge_rate']:
@@ -2067,16 +2071,13 @@ def execute_explore(user_id, selected_exploration_option):
             name='Resource Rate Increased',
             value=f'By {selected_exploration_option["data"]}',
         )
-
     if selected_exploration_option['type'] == 'free_hero':
-        print('Giving Free Hero')
         db.Army.update_one({'_id': user_id}, {'$set': {selected_exploration_option['data']: 1}})
         return nextcord.Embed(
             title='Exploration Result',
             description=f'{selected_exploration_option["data"]} has joined your ranks!',
             color=0x00ff00,
         )
-
     if selected_exploration_option['type'] == 'wonder':
         db.Nations.update_one({'_id': user_id}, {'$push': {'owned_wonders': selected_exploration_option['data']}})
         return nextcord.Embed(
@@ -2084,22 +2085,45 @@ def execute_explore(user_id, selected_exploration_option):
             description=f'Your units discovered a wonder: {selected_exploration_option["data"].replace("_", " ").capitalize()}',
             color=0x00ff00,
         )
-
     if selected_exploration_option['type'] == 'pirates':
         user_army = get_user_army(user_id)
-        data = pirate_attack_sequence(user_id, selected_exploration_option['data'])
+        user_stats = get_user_stats(user_id)
+        defender_army = get_user_army('pirate_user_id')
+        defender_stats = get_user_stats('pirate_user_id')
+        attacker_army, attacker_casualties, defender_army, defender_casualties, winner = attack_sequence(user_stats, user_army, defender_stats, selected_exploration_option['data'])
+        update_army(user_id, attacker_army)
+        if winner == 'attacker':
+            winner_id = user_id
+            loser_id = 'pirate_user_id'
+            user_stats['resources']
+        if winner == 'defender':
+            winner_id = 'pirate_user_id'
+            loser_id = user_id
+
+        total_bonus_loot = {} #used for summary
+        if winner_id == user_id:
+            for unit in defender_casualties.keys():
+                unit_costs = get_unit_costs()
+                for res in unit_costs[unit].keys():
+                    total_bonus_loot[res] = (unit_costs[unit][res] * 3)
+                    user_stats['resources'][res] += (unit_costs[unit][res] * 3)
+
+        update_resources(user_id, user_stats['resources'])
+        winner_stats = get_user_stats(winner_id)
+        loser_stats = get_user_stats('pirate_user_id')
+        summary = generate_battle_summary(winner_stats['name'], loser_stats['name'], total_bonus_loot, attacker_casualties, defender_casualties,
+                                winner_stats['username'], loser_stats['username'], winner_stats['motto'],
+                                winner_stats['battle_rating'], loser_stats['battle_rating'])
         embed = nextcord.Embed(
             title='BATTLE SUMMARY (TESTING)',
-            description=f'{data["winner"]} DEFEATED {data["loser"]}',
+            description=f'{summary["winner"]} DEFEATED {summary["loser"]}',
             color=0xff0000,
         )
-
-        embed.add_field(name='Winner', value=f'{data["winner"]}')
-        embed.add_field(name='Loser', value=f'{data["loser"]}')
-        embed.add_field(name='Plundered', value=f'{data["tribute"]}')
-        embed.add_field(name='Attacker Casualties', value=f'{data["attacker_casualties"]}')
-        embed.add_field(name='Pirate Casualties', value=f'{data["pirate_casualties"]}')
-
+        embed.add_field(name='Winner', value=f'{summary["winner"]}')
+        embed.add_field(name='Loser', value=f'{summary["loser"]}')
+        embed.add_field(name='Plundered', value=f'{summary["tribute"]}')
+        embed.add_field(name='Attacker Casualties', value=f'{summary["attacker_casualties"]}')
+        embed.add_field(name='Pirate Casualties', value=f'{summary["defender_casualties"]}')
         return embed
 
 def buy_building(user_id, building, num_build):
@@ -2110,15 +2134,19 @@ def buy_building(user_id, building, num_build):
     res_data = list(db.Resources.find({'_id': user_id}, {'_id': 0}))[0]
     nation_data = list(db.Nations.find({'_id': user_id}, {'_id': 0}))[0]
     building_costs = get_buildings_costs_by_age(age)
-    print(building_costs)
+    # print(building_costs)
     for resource in building_costs[building]['costs']:
-        print(resource)
+        # print(resource)
         if res_data[resource] - (building_costs[building]['costs'][resource] * num_build) >= 0:
             res_data[resource] -= (building_costs[building]['costs'][resource] * num_build)
         else:
             return False
         
+    # print(user_id)
+    # print(building)
+    # print(num_build)
     update_resources(user_id, res_data)
+    print(get_list_of_defense_buildings())
     nation_data[building] += num_build
     if building == 'granary': 
         res_data['food_rate'] += rate_increase * num_build
@@ -2218,29 +2246,51 @@ def format_string(input_string):
     formatted_string = ' '.join(formatted_words)
     return formatted_string
 
-def calculate_max(thing_to_buy, type, user_stats): # fix later
+def calculate_max(thing_to_buy, type, user_stats, user_army): # fix later
     age = user_stats['age']
     if type == 'unit':
         unit_costs = get_unit_costs()
-        pprint.pprint(unit_costs)
+        # pprint.pprint(unit_costs)
         num_units = sys.maxsize
         for res in unit_costs[thing_to_buy]:
             num_units = min(num_units, math.floor(user_stats['resources'][res] / unit_costs[thing_to_buy][res]))
-        # print('calcualted max:', num_units)
         return num_units
 
     elif type == 'building':
         building_costs = get_buildings_costs_by_age(age)
-        print(building_costs)
+        # print(building_costs)
         num_buildings = sys.maxsize
         for resource in building_costs[thing_to_buy]['costs']:
-            print(resource)
+            # print(resource)
             num_buildings = min(num_buildings, math.floor(user_stats['resources'][resource] / building_costs[thing_to_buy]['costs'][resource]))
         return num_buildings
-
+    
+    elif type == 'contribute': 
+        return user_army[thing_to_buy]
+    
+def calculate_max_invest(stock, user_stats):
+    current_stock_price = yf.Ticker(stock).info['ask']
+    money = user_stats['resources']['wealth']
+    return math.floor(money/current_stock_price)
 
 def remove_era_information(input_dict):
     result_dict = {}
     for era, units in input_dict.items():
         result_dict.update(units)
     return result_dict
+
+def format_alliance_members(input_data):
+    if not isinstance(input_data, list) or len(input_data) < 1:
+        return "Invalid input format"
+
+    main_username = input_data[0]
+    user_data = input_data[1:]
+
+    formatted_string = f"Owner Username: {main_username}\n"
+
+    for user_info in user_data:
+        username = user_info.get('username', 'N/A')
+        user_id = user_info.get('id', 'N/A')
+        formatted_string += f"{username}  |  {user_id}\n"
+
+    return formatted_string

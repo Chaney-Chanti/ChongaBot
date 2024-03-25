@@ -2,11 +2,6 @@ import nextcord
 from nextcord.ext import commands
 from nextcord.ui import Button, View
 
-bot = commands.Bot(command_prefix="!")
-
-#controller should send data to view
-#if member is accepted: msg them back, add them to alliance
-#else msg them back
 class AllianceAcceptanceButton(nextcord.ui.Button):
     def __init__(self, label, custom_id, callback, creator_id, view):
         self.callback_func = callback

@@ -2,8 +2,6 @@ import nextcord
 from nextcord.ext import commands
 from nextcord.ui import Button, View
 
-bot = commands.Bot(command_prefix="!")
-
 class ExplorationButton(nextcord.ui.Button):
     def __init__(self, label, custom_id, exploration_event, callback, creator_id, view):
         self.exploration_event = exploration_event

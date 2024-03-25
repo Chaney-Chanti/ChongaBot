@@ -28,6 +28,15 @@ client = commands.Bot(command_prefix = 'c!', intents=intents)#intents needed to 
 client.remove_command('help') #allows me to override the default and write my own
 prefix = client.command_prefix
 
+#figure out a way to not run this everytime
+if (not utils.check_nation_exists('pirate_user_id')):
+    user_nation = objects.nation.CreateNation('pirate_user_id','pirate_server_id', 'Pirates', 'Pirates', time.time())
+    user_resources = objects.resources.CreateResources('pirate_user_id', 'Pirates', 'Pirates', time.time())
+    user_army = objects.army.CreateArmy('pirate_user_id', 'Pirates', 'Pirates')
+    db.Nations.insert_one(user_nation.__dict__)
+    db.Resources.insert_one(user_resources.__dict__)
+    db.Army.insert_one(user_army.__dict__)
+
 """SETTINGS"""
 resource_claim_cap = 24
 
@@ -45,7 +54,8 @@ async def preprocessing(ctx):
         print(response)
         raise commands.CommandError("Checks failed.")
     else:
-        print(response)
+        pass
+        #print(response)
 
 @client.command(name='help', aliases=['Help', 'HELP'], description='See list of commands')
 async def help(ctx):
@@ -249,7 +259,7 @@ async def shop(ctx, arg1=None, arg2=None):
         if arg2 == None:
             num_units = 1
         if arg2 == 'max':
-            num_units = utils.calculate_max(unit, 'unit', user_stats)
+            num_units = utils.calculate_max(unit, 'unit', user_stats, 'None')
 
         resource_cost = utils.validate_execute_shop(user_id, unit, num_units)
         if str(unit) not in users_units:
@@ -290,7 +300,7 @@ async def build(ctx, arg1=None, arg2=None):
         if arg2 != None and arg2.isnumeric():
             num_build = int(arg2)
         if arg2 == 'max':
-            num_build = utils.calculate_max(building, 'building', utils.get_user_stats(user_id))
+            num_build = utils.calculate_max(building, 'building', utils.get_user_stats(user_id), 'None')
         if num_build > 0:
             if utils.buy_building(user_id, building.lower(), num_build):
                 await ctx.send(f'Successfully built {num_build} {building}(s)')
@@ -336,10 +346,8 @@ async def attack(ctx, arg=None):
         await ctx.channel.send(embed=embed)
     else:
         attacker_stats, attacker_army, defender_stats, defender_army = utils.form_pvp_armies(user_id, response)
-        #get casualties
         attacker_army, attacker_casualties, defender_army, defender_casualties, winner = utils.attack_sequence(attacker_stats, attacker_army, defender_stats, defender_army)
         #update armies
-        print(attacker_army, defender_army)
         utils.update_army(user_id, attacker_army)
         utils.update_army(response, defender_army)
         #update resources
@@ -351,8 +359,15 @@ async def attack(ctx, arg=None):
             loser_id = user_id
         
         winner_stats = utils.get_user_stats(winner_id)
-        loser_stats = utils.get_user_stats(loser_stats)
+        loser_stats = utils.get_user_stats(loser_id)
+        winner_stats['battle_rating'] += 25
+        loser_stats['battle_rating'] -= 25
+
+        utils.update_battle_rating(winner_id, winner_stats)
+        utils.update_battle_rating(loser_id, loser_stats)
+        
         tribute = utils.award_tribute(winner_id, loser_id)
+
         #generate battle_summary
         summary = utils.generate_battle_summary(winner_stats['name'], loser_stats['name'], tribute, attacker_casualties, defender_casualties,
                                       winner_stats['username'], loser_stats['username'], winner_stats['motto'],
@@ -533,20 +548,30 @@ async def createalliance(ctx, arg=None):
         embed.add_field(name="Members", value=alliance_data['num_members'], inline=True)
         embed.add_field(name="Battle Rating", value=alliance_data['alliance_battle_rating'], inline=True)
         embed.add_field(name="Legion", value=alliance_data['alliance_army'], inline=True)
+        members = alliance_data['normal_members'] + alliance_data['distinguished_members']
+        members.insert(0, alliance_data['owner_username'])
+        embed.add_field(name="Members", value=utils.format_alliance_members(members), inline=True)
 
         await ctx.send(embed=embed)
 
 
-#send a dm to the owner and mods and have the owner or mod accept the member
+#send a dm to the owner and mods and have the owner or mod accept the member x
 #join should list a view of alliances to join
-#not sure if this function is as asynchronous as i think
+#not sure if this function is as asynchronous as i think x
+#the button is not disabled for other people
+#sovereigns do not get the join msg 
 @client.command(name='join', aliases=['Join', 'JOIN'])
 async def join(ctx, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
     error, response = utils.check_join(ctx, user_id, arg)
     if error == True:
         await ctx.send(response)
+    elif arg == None:
+        print('getting list of alliances')
+        alliance_list = utils.get_list_of_alliances()
+        #wait for pagination to get implemented
     else:
+        pending_applicants = []
         await ctx.send('A request has been sent to the owner and mods, please wait for an acceptance.')
         alliance_data = utils.get_alliance_data(arg)
         sovereigns = alliance_data['distinguished_members']
@@ -576,7 +601,6 @@ async def join(ctx, arg=None):
         new_member_view = AllianceAcceptanceView('Accept', 'Deny', user_id, alliance_data['creator_id'], 
                                                  sovereigns, accept_callback, deny_callback)
         
-        # user = await client.fetch_user(alliance_data['creator_id'])
         user = await client.fetch_user(user_id) #for testing
 
         embed = nextcord.Embed(title=f"======= {user_stats['name']} =======", color=0x00ff00)
@@ -589,22 +613,37 @@ async def join(ctx, arg=None):
         embed.add_field(name="Wonders", value=wonder_string, inline=True)
         embed.add_field(name="Battle Rating", value=user_stats['battle_rating'], inline=True)
 
-        await user.send('A member applied', view=new_member_view, embed=embed)
+        await user.send('A member applied', view=new_member_view, embed=embed) # disable accept button for others
+        user = await client.fetch_user(alliance_data['creator_id']) #for testing
+        await user.send('A member applied', view=new_member_view, embed=embed) #for testing
         
         if sovereigns != []: #have soveriengs be able to accept or deny a member
             for member in sovereigns:
-                user = await client.fetch_user(member)
+                print(member)
+                user = await client.fetch_user(member['id'])
                 await user.send('A member applied', view=new_member_view, embed=embed)
 
-@client.command(name='kick', aliases=['KICK', 'Kick'])
-async def kick(ctx, arg=None):
+@client.command(name='leave', aliases=['Leave', 'LEAVE'])
+async def leave(ctx, arg=None):
     user_id, server_id, username = utils.get_message_info(ctx)
-    member_id = utils.get_user_id_from_username(arg)
-    sovereign_id = user_id
-    error, response = utils.check_kick_member(ctx, user_id, arg)
+    error, response = utils.check_leave(ctx, user_id, arg)
     if error == True:
         await ctx.send(response)
     else:
+        utils.leave(user_id)
+        await ctx.send('```You have left your alliance...```')
+
+#sovereigns dont have kick powers
+@client.command(name='kick', aliases=['KICK', 'Kick'])
+async def kick(ctx, arg=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    member_id = utils.get_user_id_from_username(arg) #change to handle @'s
+    sovereign_id = user_id
+    error, response = utils.check_kick_member(ctx, user_id, member_id)
+    if error == True:
+        await ctx.send(response)
+    else:
+        print('kick soverign:', sovereign_id, 'normal member:', member_id)
         utils.kick_member(sovereign_id, member_id)
         user = await client.fetch_user(member_id) #for testing
         await user.send(f'You have been kicked from your alliance LOL')
@@ -619,20 +658,20 @@ async def promote(ctx, arg=None):
         await ctx.send(response)
     else:
         member_id = utils.get_user_id_from_username(arg)
-        utils.promote(member_id)
+        utils.promote(user_id, member_id)
         user = await client.fetch_user(member_id) #for testing
         await user.send(f'You have been promoted within your alliance')
         user = await client.fetch_user(user_id) #for testing
         await user.send(f'Member has been promoted')
 
-@client.command(name='disband', aliases=['Disband', 'DISBAND'])
-async def disband(ctx, arg=None):
-    user_id, server_id, username = utils.get_message_info(ctx)
-    error, response = utils.check_disband(ctx, user_id, arg)
-    if error == True:
-        await ctx.send(response)
-    else:
-        pass
+# @client.command(name='disband', aliases=['Disband', 'DISBAND'])
+# async def disband(ctx, arg=None):
+#     user_id, server_id, username = utils.get_message_info(ctx)
+#     error, response = utils.check_disband(ctx, user_id, arg)
+#     if error == True:
+#         await ctx.send(response)
+#     else:
+#         pass
 
 @client.command(name='send_resources', aliases=['SEND_RESOURCES', 'Send_Resources'])
 async def sned_resources(ctx, arg=None):
@@ -642,7 +681,6 @@ async def sned_resources(ctx, arg=None):
         await ctx.send(response)
     else:
         pass
-
        
 @client.command(name='contribute', aliases=['Contribute', 'CONTRIBUTE'])
 async def createalliance(ctx, arg1=None, arg2=None):
@@ -657,11 +695,50 @@ async def createalliance(ctx, arg1=None, arg2=None):
         if arg2 == None:
             num_units = 1
         if arg2 == 'max':
-            num_units = utils.calculate_max(unit, 'unit', user_stats)
+            num_units = utils.calculate_max(unit, 'contribute', user_stats, utils.get_user_army(user_id))
 
         utils.contribute(user_id, unit, num_units)
         embed = nextcord.Embed(description=f'```Successfully sent {num_units} {unit}s```', color=0x00ff00)
         await ctx.send(embed=embed)
+
+@client.command(name='invest', aliases=['Invest', 'INVEST'])
+async def createalliance(ctx, arg1=None, arg2=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_invest(ctx, user_id, arg1, arg2)
+    if error == True:
+        await ctx.send(response)
+    else:
+        user_stats = utils.get_user_stats(user_id)
+        stock = arg1
+        num_stock = arg2
+        if arg2 == None:
+            num_units = 1
+        if arg2 == 'max': # figure a way to incorporate this into the calculte_max function
+            num_stock = utils.calculate_max_invest(stock, user_stats)
+            print(num_stock)
+
+        utils.invest(user_id, stock, num_stock)
+        embed = nextcord.Embed(description=f'```Successfully bought {num_stock} {stock} shares.```', color=0x00ff00)
+        await ctx.send(embed=embed)
+
+@client.command(name='sell', aliases=['Sell', 'SELL'])
+async def createalliance(ctx, arg1=None, arg2=None):
+    user_id, server_id, username = utils.get_message_info(ctx)
+    error, response = utils.check_invest(ctx, user_id, arg1, arg2)
+    if error == True:
+        await ctx.send(response)
+    else:
+        user_stats = utils.get_user_stats(user_id)
+        stock = arg1
+        num_stock = arg2
+        if arg2 == None:
+            num_units = 1
+        if arg2 == 'max': # figure a way to incorporate this into the calculte_max function
+            num_stock = user_stats['resources'][stock]
+        utils.sell(user_id, stock, num_stock)
+        embed = nextcord.Embed(description=f'```Successfully dumped {num_stock} {stock} shares.```', color=0x00ff00)
+        await ctx.send(embed=embed)
+
 
 
 client.run(TOKEN)

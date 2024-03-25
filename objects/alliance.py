@@ -11,21 +11,3 @@ class Alliance:
         self.distinguished_members = []
         self.alliance_battle_rating = creator_br
         self.alliance_army = {}
-
-    # def add_member(self):
-    #     pass
-    # def kick_member(self):
-    #     pass
-    # def list_all_members(self):
-    #     pass
-    # def promote_member(self):
-    #     pass
-    # def send_resources(self): # cap at some amt
-    #     pass
-    # def add_to_alliance_army(self): # for battling bosses
-    #     pass
-    # def attack_boss(self):
-    #     pass
-
-
-    #be able to list members of your alliance and others
