@@ -210,6 +210,7 @@ def check_explore(ctx, user_id, arg):
     user_stats = get_user_stats(user_id)
     current_time = time.time()
     time_passed_hours = (current_time - user_stats['last_explore']) / 3600
+    print("time_passed_hours", time_passed_hours)
     if time_passed_hours <= 6:
         time_remaining_seconds = max(0, 21600 - ((current_time - user_stats['last_explore'])))
         # Convert time remaining to hours, minutes, and seconds
@@ -736,16 +737,10 @@ def get_all_research_info(): # return just research info, costs are in knowledge
 def get_all_bosses():
     return {
         'ancient': {
-            'the_persian_empire': {
+            'kraken': {
                 
             },
-            'the_mongol_empire': {
-
-            },
-            'the_greek_empire': {
-
-            },
-            'the_roman_empire': {
+            'chimera': {
 
             },
         },

@@ -59,13 +59,30 @@ async def preprocessing(ctx):
 
 @client.command(name='help', aliases=['Help', 'HELP'], description='See list of commands')
 async def help(ctx):
+    embeds = []  # List to store embeds
     embed = nextcord.Embed(title=f"{prefix}help", description='help command for if you are acoustic')
-    for command in client.walk_commands():
-        description = command.description
-        if not description or description is None or description ==  '':
-            description = 'No Description Provided'
-        embed.add_field(name=f'`{prefix}{command.name}{command.signature if command.signature is not None else ""}`', value=description)
-    await ctx.send(embed=embed)
+
+    for index, command in enumerate(client.walk_commands()):
+        description = command.description if command.description else 'No Description Provided'  # Ensure description is set
+
+        # If 25 commands have been added, create a new embed
+        if index > 0 and index % 25 == 0:
+            embeds.append(embed)  # Add the current embed to the embeds list
+            embed = nextcord.Embed(title=f"{prefix}help", description='help command for if you are acoustic')  # Create a new embed
+
+        # Add the command to the current embed
+        embed.add_field(
+            name=f'`{prefix}{command.name}{command.signature if command.signature else ""}`',
+            value=description
+        )
+
+    # Add the last embed if it contains any fields
+    if embed.fields:
+        embeds.append(embed)
+
+    # Send all embeds
+    for embed in embeds:
+        await ctx.send(embed=embed)
 
 @client.command(name='createnation', aliases=['CREATENATION', 'CreateNation', 'Createnation'], description='Create your nation, MUST BE ALL ONE WORD!')
 async def create_nation(ctx, arg=None):
