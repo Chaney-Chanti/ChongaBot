@@ -1201,6 +1201,7 @@ def get_all_defense_unit_info():
             'fortress': { 
                 'costs': {'food': 20000, 'timber': 20000, 'metal': 20000, 'wealth': 20000},
                 'rolls': {'lowerbound': 100, 'upperbound': 400, },
+                'type': 'defense',
             },
         },
         'modern': {
@@ -2024,6 +2025,10 @@ def validate_execute_shop(userID, unit, num_units):
     return [True, new_resource_balance]
 
 def execute_explore(user_id, selected_exploration_option):
+    data = get_user_stats(user_id)
+    current_time = time.time()
+    data['last_explore'] = current_time
+    update_nation(user_id, data)
     if selected_exploration_option['type'] == 'free_resources':
         data = get_user_stats(user_id)
         for resource in ['food', 'timber', 'metal', 'wealth', 'oil', 'knowledge']:
@@ -2125,9 +2130,9 @@ def buy_building(user_id, building, num_build):
     num_build = int(num_build)
     age = get_age(user_id)
     user_army = get_user_army(user_id)
+    user_stats = get_user_stats(user_id)
     rate_increase = age_resource_rate_increases[age]
     res_data = list(db.Resources.find({'_id': user_id}, {'_id': 0}))[0]
-    nation_data = list(db.Nations.find({'_id': user_id}, {'_id': 0}))[0]
     building_costs = get_buildings_costs_by_age(age)
     # print(building_costs)
     for resource in building_costs[building]['costs']:
@@ -2137,12 +2142,8 @@ def buy_building(user_id, building, num_build):
         else:
             return False
         
-    # print(user_id)
-    # print(building)
-    # print(num_build)
     update_resources(user_id, res_data)
-    print(get_list_of_defense_buildings())
-    nation_data[building] += num_build
+    user_stats[building] += num_build
     if building == 'granary': 
         res_data['food_rate'] += rate_increase * num_build
     elif building == 'lumbermill' or building == 'lumber mill': 
@@ -2156,9 +2157,9 @@ def buy_building(user_id, building, num_build):
     elif building == 'university': 
         res_data['knowledge_rate'] += rate_increase * num_build
     elif building in get_list_of_defense_buildings():
-        user_army[building] += num_build
-    update_building(user_id, building, nation_data)
+        user_stats[building] += num_build
     update_resource_rate(user_id, res_data)
+    update_nation(user_id, user_stats)
     return True
 
 def upgrade_age(user_id):
