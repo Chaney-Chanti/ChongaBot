@@ -1,0 +1,7 @@
+# Each role beats exactly one other role (settings.counter_multiplier damage, and it
+# focuses its fire on that role). The loader checks this stays a closed cycle.
+melee: ranged
+ranged: cavalry
+cavalry: siege
+siege: defense
+defense: melee

@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- ChongaBot avatar: Chonga the First, over the Chongalayas.
+       Discord crops avatars to a circle, so everything important sits inside r=440. -->
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="42%" r="70%">
+      <stop offset="0" stop-color="#7b4bc4"/>
+      <stop offset="0.6" stop-color="#4a2582"/>
+      <stop offset="1" stop-color="#25124a"/>
+    </radialGradient>
+    <radialGradient id="skin" cx="45%" cy="38%" r="65%">
+      <stop offset="0" stop-color="#ffd3a1"/>
+      <stop offset="1" stop-color="#e79a5e"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe680"/>
+      <stop offset="0.55" stop-color="#f5b82e"/>
+      <stop offset="1" stop-color="#c9811a"/>
+    </linearGradient>
+    <linearGradient id="beard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a4b23"/>
+      <stop offset="1" stop-color="#5c2e12"/>
+    </linearGradient>
+    <linearGradient id="peak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3fa58a"/>
+      <stop offset="1" stop-color="#1d5e55"/>
+    </linearGradient>
+  </defs>
+
+  <!-- sky -->
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+
+  <!-- sunburst behind the head -->
+  <g transform="translate(512 470)" fill="#ffd45c" opacity="0.16">
+    <path d="M0 0 L-60 -460 L60 -460 Z"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(30)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(60)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(90)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(120)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(150)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(180)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(210)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(240)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(270)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(300)"/>
+    <path d="M0 0 L-60 -460 L60 -460 Z" transform="rotate(330)"/>
+  </g>
+  <circle cx="512" cy="470" r="330" fill="#ffd45c" opacity="0.12"/>
+
+  <!-- the Chongalayas -->
+  <path d="M0 860 L170 640 L290 760 L420 600 L540 740 L680 590 L820 750 L920 660 L1024 790 L1024 1024 L0 1024 Z"
+        fill="url(#peak)"/>
+  <path d="M170 640 L212 694 L190 690 L172 712 L150 688 L128 694 Z M420 600 L462 652 L440 648 L420 672 L398 648 L378 652 Z M680 590 L724 646 L700 640 L680 664 L660 640 L636 646 Z"
+        fill="#eef6ff"/>
+  <path d="M0 900 Q260 820 512 880 T1024 870 L1024 1024 L0 1024 Z" fill="#164a44"/>
+  <!-- the Rivers of Chonga -->
+  <path d="M640 1024 Q600 960 680 930 Q760 900 840 905" fill="none" stroke="#5fc3e8" stroke-width="26" stroke-linecap="round"/>
+  <path d="M380 1024 Q420 960 340 930 Q260 900 190 910" fill="none" stroke="#5fc3e8" stroke-width="22" stroke-linecap="round"/>
+
+  <!-- Chonga the First -->
+  <g>
+    <!-- ears -->
+    <ellipse cx="300" cy="500" rx="48" ry="64" fill="#e99c60"/>
+    <ellipse cx="724" cy="500" rx="48" ry="64" fill="#e99c60"/>
+    <!-- head -->
+    <ellipse cx="512" cy="500" rx="215" ry="225" fill="url(#skin)"/>
+
+    <!-- beard: big, round, a bit unruly -->
+    <path d="M300 520 Q300 760 420 820 Q470 860 512 850 Q554 860 604 820 Q724 760 724 520
+             Q690 600 620 610 Q560 580 512 600 Q464 580 404 610 Q334 600 300 520 Z"
+          fill="url(#beard)"/>
+
+    <!-- grin -->
+    <path d="M420 640 Q512 730 604 640 Q512 680 420 640 Z" fill="#7a1f2b"/>
+    <path d="M440 648 Q512 676 584 648 L578 664 Q512 690 446 664 Z" fill="#ffffff"/>
+
+    <!-- moustache -->
+    <path d="M512 600 Q450 560 380 600 Q360 640 400 640 Q450 610 512 625 Q574 610 624 640 Q664 640 644 600 Q574 560 512 600 Z"
+          fill="#6e3818"/>
+
+    <!-- cheeks -->
+    <ellipse cx="385" cy="560" rx="45" ry="30" fill="#ff7f7f" opacity="0.45"/>
+    <ellipse cx="639" cy="560" rx="45" ry="30" fill="#ff7f7f" opacity="0.45"/>
+
+    <!-- nose -->
+    <ellipse cx="512" cy="545" rx="50" ry="44" fill="#e8925a"/>
+    <ellipse cx="497" cy="532" rx="14" ry="10" fill="#ffd3a1" opacity="0.7"/>
+
+    <!-- eyes -->
+    <ellipse cx="435" cy="470" rx="30" ry="36" fill="#ffffff"/>
+    <ellipse cx="589" cy="470" rx="30" ry="36" fill="#ffffff"/>
+    <circle cx="442" cy="476" r="17" fill="#2a1a10"/>
+    <circle cx="596" cy="476" r="17" fill="#2a1a10"/>
+    <circle cx="448" cy="469" r="6" fill="#ffffff"/>
+    <circle cx="602" cy="469" r="6" fill="#ffffff"/>
+
+    <!-- bushy eyebrows, one raised: he's up to something -->
+    <path d="M385 420 Q430 385 482 412" fill="none" stroke="#5c2e12" stroke-width="26" stroke-linecap="round"/>
+    <path d="M542 405 Q600 365 645 400" fill="none" stroke="#5c2e12" stroke-width="26" stroke-linecap="round"/>
+
+    <!-- crown, slightly askew -->
+    <g transform="rotate(-6 512 300)">
+      <path d="M352 330 L330 175 L425 250 L512 140 L599 250 L694 175 L672 330 Z"
+            fill="url(#gold)" stroke="#9a5a0e" stroke-width="10" stroke-linejoin="round"/>
+      <rect x="348" y="312" width="328" height="56" rx="14"
+            fill="url(#gold)" stroke="#9a5a0e" stroke-width="10"/>
+      <circle cx="330" cy="172" r="20" fill="#ffe680" stroke="#9a5a0e" stroke-width="8"/>
+      <circle cx="512" cy="136" r="24" fill="#ffe680" stroke="#9a5a0e" stroke-width="8"/>
+      <circle cx="694" cy="172" r="20" fill="#ffe680" stroke="#9a5a0e" stroke-width="8"/>
+      <ellipse cx="512" cy="340" rx="26" ry="20" fill="#e0344a" stroke="#8a1424" stroke-width="6"/>
+      <ellipse cx="420" cy="340" rx="18" ry="15" fill="#3fa58a" stroke="#1d5e55" stroke-width="5"/>
+      <ellipse cx="604" cy="340" rx="18" ry="15" fill="#4f7bff" stroke="#203a99" stroke-width="5"/>
+      <path d="M512 196 L540 232 L512 268 L484 232 Z" fill="#e0344a" stroke="#8a1424" stroke-width="6"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,40 @@
+# One research per resource per age, each +20% to that resource's production.
+# Bonuses multiply, so researching an age's food topic stacks with older ones.
+
+ancient:
+  pastures:      { name: Pastures,      cost: { knowledge: 300 }, effects: [{ kind: rate_multiplier, resources: { food: 1.2 } }] }
+  carpentry:     { name: Carpentry,     cost: { knowledge: 300 }, effects: [{ kind: rate_multiplier, resources: { timber: 1.2 } }] }
+  metal_alloys:  { name: Metal Alloys,  cost: { knowledge: 300 }, effects: [{ kind: rate_multiplier, resources: { metal: 1.2 } }] }
+  trading:       { name: Trading,       cost: { knowledge: 300 }, effects: [{ kind: rate_multiplier, resources: { wealth: 1.2 } }] }
+  writing:       { name: Writing,       cost: { knowledge: 300 }, effects: [{ kind: rate_multiplier, resources: { knowledge: 1.2 } }] }
+
+medieval:
+  crop_rotation:  { name: Crop Rotation,  cost: { knowledge: 2000 }, effects: [{ kind: rate_multiplier, resources: { food: 1.2 } }] }
+  construction:   { name: Construction,   cost: { knowledge: 2000 }, effects: [{ kind: rate_multiplier, resources: { timber: 1.2 } }] }
+  steel:          { name: Steel,          cost: { knowledge: 2000 }, effects: [{ kind: rate_multiplier, resources: { metal: 1.2 } }] }
+  currency:       { name: Currency,       cost: { knowledge: 2000 }, effects: [{ kind: rate_multiplier, resources: { wealth: 1.2 } }] }
+  printing_press: { name: Printing Press, cost: { knowledge: 2000 }, effects: [{ kind: rate_multiplier, resources: { knowledge: 1.2 } }] }
+
+enlightenment:
+  seed_drill:   { name: Seed Drill,   cost: { knowledge: 7000 }, effects: [{ kind: rate_multiplier, resources: { food: 1.2 } }] }
+  engineering:  { name: Engineering,  cost: { knowledge: 7000 }, effects: [{ kind: rate_multiplier, resources: { timber: 1.2 } }] }
+  dynamite:     { name: Dynamite,     cost: { knowledge: 7000 }, effects: [{ kind: rate_multiplier, resources: { metal: 1.2 } }] }
+  banking:      { name: Banking,      cost: { knowledge: 7000 }, effects: [{ kind: rate_multiplier, resources: { wealth: 1.2 } }] }
+  standard_oil: { name: Standard Oil, cost: { knowledge: 7000 }, effects: [{ kind: rate_multiplier, resources: { oil: 1.2 } }] }
+  philosophy:   { name: Philosophy,   cost: { knowledge: 7000 }, effects: [{ kind: rate_multiplier, resources: { knowledge: 1.2 } }] }
+
+modern:
+  tractors:        { name: Tractors,        cost: { knowledge: 25000 }, effects: [{ kind: rate_multiplier, resources: { food: 1.2 } }] }
+  chainsaws:       { name: Chainsaws,       cost: { knowledge: 25000 }, effects: [{ kind: rate_multiplier, resources: { timber: 1.2 } }] }
+  deep_mining:     { name: Deep Mining,     cost: { knowledge: 25000 }, effects: [{ kind: rate_multiplier, resources: { metal: 1.2 } }] }
+  stock_exchange:  { name: Stock Exchange,  cost: { knowledge: 25000 }, effects: [{ kind: rate_multiplier, resources: { wealth: 1.2 } }] }
+  oil_refinery:    { name: Oil Refinery,    cost: { knowledge: 25000 }, effects: [{ kind: rate_multiplier, resources: { oil: 1.2 } }] }
+  supercomputers:  { name: Supercomputers,  cost: { knowledge: 25000 }, effects: [{ kind: rate_multiplier, resources: { knowledge: 1.2 } }] }
+
+space:
+  terraforming:           { name: Terraforming,           cost: { knowledge: 70000 }, effects: [{ kind: rate_multiplier, resources: { food: 1.2 } }] }
+  auto_tree_regeneration: { name: Auto Tree Regeneration, cost: { knowledge: 70000 }, effects: [{ kind: rate_multiplier, resources: { timber: 1.2 } }] }
+  asteroid_mining:        { name: Asteroid Mining,        cost: { knowledge: 70000 }, effects: [{ kind: rate_multiplier, resources: { metal: 1.2 } }] }
+  galactic_trade:         { name: Galactic Trade,         cost: { knowledge: 70000 }, effects: [{ kind: rate_multiplier, resources: { wealth: 1.2 } }] }
+  star_oil:               { name: Star Oil,               cost: { knowledge: 70000 }, effects: [{ kind: rate_multiplier, resources: { oil: 1.2 } }] }
+  space_station:          { name: Space Station,          cost: { knowledge: 70000 }, effects: [{ kind: rate_multiplier, resources: { knowledge: 1.2 } }] }

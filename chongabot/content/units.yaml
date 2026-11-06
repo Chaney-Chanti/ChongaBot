@@ -1,0 +1,40 @@
+# Units by age. attack and hp come from scripts/derive_unit_stats.py so every unit in
+# an age is equally cost-efficient; role and counters decide the matchups.
+# Heroes aren't units: they live in heroes.yaml and never fight.
+
+ancient:
+  slinger: { name: Slinger, role: ranged, attack: 6, hp: 7, cost: { food: 35 } }
+  clubman: { name: Clubman, role: melee, attack: 4, hp: 12, cost: { food: 30, timber: 10 } }
+  spearman: { name: Spearman, role: melee, attack: 6, hp: 20, cost: { food: 40, metal: 25 } }
+  archer: { name: Archer, role: ranged, attack: 10, hp: 12, cost: { food: 40, timber: 25 } }
+  horseman: { name: Horseman, role: cavalry, attack: 10, hp: 20, cost: { food: 50, wealth: 30 } }
+  catapult: { name: Catapult, role: siege, attack: 22, hp: 13, cost: { timber: 60, metal: 40 } }
+
+medieval:
+  knight: { name: Knight, role: melee, attack: 24, hp: 73, cost: { food: 100, metal: 80, wealth: 20 } }
+  crossbowman: { name: Crossbowman, role: ranged, attack: 31, hp: 37, cost: { food: 80, timber: 50, metal: 30 } }
+  lancer: { name: Lancer, role: cavalry, attack: 33, hp: 66, cost: { food: 120, metal: 60, wealth: 40 } }
+  trebuchet: { name: Trebuchet, role: siege, attack: 71, hp: 43, cost: { timber: 160, metal: 100 } }
+
+enlightenment:
+  grenadier: { name: Grenadier, role: melee, attack: 75, hp: 225, cost: { food: 250, metal: 200, wealth: 50 } }
+  minuteman: { name: Minuteman, role: ranged, attack: 95, hp: 114, cost: { food: 220, metal: 130, wealth: 50 } }
+  hussar: { name: Hussar, role: cavalry, attack: 101, hp: 202, cost: { food: 300, metal: 150, wealth: 100 } }
+  cannon: { name: Cannon, role: siege, attack: 201, hp: 121, cost: { timber: 250, metal: 300, wealth: 50 } }
+
+modern:
+  commando: { name: Commando, role: melee, attack: 256, hp: 767, cost: { food: 600, metal: 400, wealth: 300, oil: 100 } }
+  infantry: { name: Infantry, role: ranged, attack: 346, hp: 416, cost: { food: 500, metal: 400, wealth: 200, oil: 100 } }
+  tank: { name: Tank, role: cavalry, attack: 358, hp: 716, cost: { metal: 900, wealth: 300, oil: 400 } }
+  fighter: { name: Fighter, role: cavalry, attack: 559, hp: 1118, cost: { metal: 1200, wealth: 600, oil: 700 } }
+  bomber: { name: Bomber, role: siege, attack: 857, hp: 514, cost: { metal: 1000, wealth: 500, oil: 600 } }
+  battleship: { name: Battleship, role: siege, attack: 1837, hp: 1102, cost: { timber: 800, metal: 2000, wealth: 800, oil: 900 } }
+  icbm: { name: ICBM, role: siege, attack: 3674, hp: 2205, cost: { metal: 3000, wealth: 3000, oil: 3000 }, requires_unlock: true, desc: "Only Dr. Kaboom knows how to build these. Appoint him as your Second in Command." }
+
+space:
+  shocktrooper: { name: Shocktrooper, role: melee, attack: 1006, hp: 3019, cost: { food: 1500, metal: 1500, wealth: 1000, oil: 500 } }
+  lasercannon: { name: Laser Cannon, role: ranged, attack: 1591, hp: 1909, cost: { metal: 2000, wealth: 1500, oil: 1000 } }
+  thor: { name: Thor Mech, role: melee, attack: 1789, hp: 5367, cost: { metal: 4000, wealth: 2500, oil: 1500 } }
+  starfighter: { name: Starfighter, role: cavalry, attack: 1917, hp: 3834, cost: { metal: 3000, wealth: 2000, oil: 2000 } }
+  battlecruiser: { name: Battlecruiser, role: siege, attack: 7000, hp: 4200, cost: { metal: 6000, wealth: 4000, oil: 4000 } }
+  deathstar: { name: Death Star, role: siege, attack: 20000, hp: 12000, cost: { metal: 15000, wealth: 15000, oil: 10000 } }

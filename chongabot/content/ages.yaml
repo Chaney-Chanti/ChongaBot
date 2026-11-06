@@ -1,0 +1,33 @@
+# Ages in order. advance_cost is paid to enter that age.
+# production_multiplier scales every production rate while you're in the age.
+# Pacing target (scripts/economy_sim.py): Medieval in ~1-2 days, Enlightenment ~6,
+# Modern ~13, Space ~3-4 weeks for a player who claims a few times a day.
+
+ancient:
+  name: Ancient
+  tagline: The Age of Mud
+  production_multiplier: 1.0
+
+medieval:
+  name: Medieval
+  tagline: The Age of Banners
+  production_multiplier: 1.6
+  advance_cost: { knowledge: 800, wealth: 500 }
+
+enlightenment:
+  name: Enlightenment
+  tagline: The Age of Wigs
+  production_multiplier: 2.5
+  advance_cost: { knowledge: 12000, wealth: 6000 }
+
+modern:
+  name: Modern
+  tagline: The Age of Smog
+  production_multiplier: 4.0
+  advance_cost: { knowledge: 80000, wealth: 40000, oil: 15000 }
+
+space:
+  name: Space
+  tagline: The Age of Stars
+  production_multiplier: 6.0
+  advance_cost: { knowledge: 350000, wealth: 175000, oil: 70000 }

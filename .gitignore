@@ -1,5 +1,18 @@
 __pycache__/
+*.py[cod]
+.venv/
 .env
-.vscode
-procfile
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.vscode/
 
+# SQLite database and backups
+*.db
+*.db-wal
+*.db-shm
+backups/
+
+# Activity frontend
+web/node_modules/
+web/dist/

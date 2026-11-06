@@ -1,0 +1,34 @@
+# One event is picked per /explore, by weight (these sum to 100, so weight = % chance).
+# Rewards are hours of your own production, so they stay relevant in every age.
+
+free_resources:
+  weight: 30
+  desc: "A hidden cache: resources worth a few hours of production."
+  min_hours: 2
+  max_hours: 6
+
+free_units:
+  weight: 25
+  desc: "Volunteers join your army: units worth a few hours of production."
+  min_hours: 3
+  max_hours: 8
+
+free_building:
+  weight: 15
+  desc: "A settlement pledges loyalty: one free production building."
+
+pirates:
+  weight: 14
+  desc: "Pirates attack your expedition. Win to take their loot."
+  min_strength: 0.6
+  max_strength: 1.1
+  min_hours: 4
+  max_hours: 8
+
+hero:
+  weight: 8
+  desc: "A hero from your age offers to join you."
+
+wonder:
+  weight: 8
+  desc: "Your explorers discover a wonder of your age."
