@@ -1,0 +1,47 @@
+# Game tuning. Times are in hours unless the key says otherwise.
+
+# Economy
+claim_min_hours: 1
+claim_cap_hours: 24
+base_rates: { food: 50, timber: 50, metal: 30, wealth: 30, knowledge: 40, oil: 0 }
+starting_resources: { food: 500, timber: 500, metal: 500, wealth: 500, knowledge: 200, oil: 0 }
+starting_units: { slinger: 10 }
+building_cost_growth: 1.16   # each copy you own makes the next one 16% pricier
+building_tiers: [1, 5, 10, 25, 50]   # Activity sprite tiers
+
+# PvP
+battle_rating_range: 200        # you can attack players within this many points
+battle_rating_base_change: 25   # points won/lost in an even fight
+battle_rating_min_change: 5
+battle_rating_max_change: 50
+tribute_share: 0.10             # share of the loser's resources taken
+tribute_bonus: 0.5              # the winner also gets this much extra, from nowhere
+shield_hours: 12                # a defender can't be attacked again for this long
+attack_cooldown_minutes: 30
+exploration_cooldown_hours: 6
+
+# Combat (volley rounds)
+combat_rounds: 5
+counter_multiplier: 1.5         # damage bonus against the role you counter
+counter_target_weight: 2        # how much a squad focuses fire on the role it counters
+damage_variance: 0.1            # each volley deals 90%-110% of its base damage
+
+# Alliances
+alliance_member_cap: 50
+
+# Bot nations (bots.yaml). An age's "scale" is the cost of advancing out of it
+# (the last age uses 1.5x the cost of entering it). Bot strength runs from
+# bot_strength_min x scale (weakest) to bot_strength_max x scale (strongest), as army value.
+bot_strength_min: 0.25
+bot_strength_max: 4.0
+bot_loot_share: 0.10            # a win pays this share of the bot's army value in resources
+bot_cooldown_hours: 12          # each bot can be attacked by you once per this many hours
+
+# Heroes
+hero_swap_cooldown_hours: 4     # after appointing a Second in Command, wait this long to swap
+
+# Alliance bosses (bosses.yaml). Each boss's army is `strength` x its age's scale, fought by
+# the whole alliance army in one battle. A win pays boss_loot_share x the boss's army value,
+# split between members by how much of the alliance army they contributed.
+boss_loot_share: 2.0         # a winning raid costs ~0.7-0.9x the boss value in losses
+boss_cooldown_hours: 24         # an alliance can fight each boss once per this many hours

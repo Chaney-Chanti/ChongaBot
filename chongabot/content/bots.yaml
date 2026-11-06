@@ -1,0 +1,59 @@
+# Bot nations of the Land of Chonga: always-available targets for each age, weakest first.
+# Their armies are generated from that age's units (see bot_* in settings.yaml), so they
+# stay balanced when units change. Bot fights give loot only: no battle rating, no shield.
+
+ancient:
+  - Mudhollow
+  - Pebbleshire
+  - Grubbington
+  - Goat's Rest
+  - Little Bonkton
+  - The Reed Villages
+  - Old Chonga Rock
+  - The Clubmen of Thud
+  - Mammothvale
+  - The Bronze Throne
+medieval:
+  - Turnipshire
+  - Muckleford
+  - Castle Wobble
+  - Hornswoggle Keep
+  - The Free City of Grogg
+  - Saltmarsh
+  - The Duchy of Lumpwick
+  - Highcrag
+  - The Iron Abbey
+  - The Black Banner Horde
+enlightenment:
+  - Wigsbury
+  - The Powdered Isles
+  - Snuffington
+  - The Teacup Republic
+  - Port Plunder
+  - The Grand Duchy of Fopp
+  - The Clockwork Court
+  - Brassholm
+  - The Gilded Empire
+  - The Crown of Chonga
+modern:
+  - New Mudhollow
+  - The Smog Union
+  - Motorvia
+  - Concretia
+  - The Bureau
+  - The Steelworks
+  - The Neon Republic
+  - Oiltopia
+  - The Federation of Big Chonga
+  - The Iron Pact
+space:
+  - Moonbase Mudhollow
+  - The Red Rock Colony
+  - The Asteroid Co-op
+  - Europa Station
+  - The Titan Collective
+  - The Belt Syndicate
+  - Proxima Outpost
+  - The Andromeda Fleet
+  - The Void Empire
+  - The Seat of Chonga the First

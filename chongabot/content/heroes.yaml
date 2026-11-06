@@ -1,0 +1,113 @@
+# Heroes of the Land of Chonga. You find them by luck while exploring (from their age on).
+# One serves as your Second in Command at a time, and only their passive applies.
+# Heroes never fight. The bonus text shown in-game is generated from `effects`.
+
+ancient:
+  grubnar:
+    name: Grubnar the Unshaven
+    desc: "Rode a war-goat named Kevin into every battle. Kevin did most of the fighting."
+    effects: [{ kind: attack_multiplier, value: 1.1, roles: [cavalry] }]
+  old_mother_turnip:
+    name: Old Mother Turnip
+    desc: "Has built every hut in the Mudlands and has opinions about all of them."
+    effects: [{ kind: building_cost_multiplier, value: 0.9 }]
+  snorri_two_spoons:
+    name: Snorri Two-Spoons
+    desc: "Always takes a second helping. Of stew, of land, of your treasury."
+    effects: [{ kind: tribute_multiplier, value: 1.15 }]
+  chief_bonk:
+    name: Chief Bonk
+    desc: "Invented the club. Then, shortly after, invented hitting things with it."
+    effects: [{ kind: attack_multiplier, value: 1.05 }]
+  lady_ooma:
+    name: Lady Ooma of the Reeds
+    desc: "Merchant queen of the river fords. Has never once paid full price."
+    effects: [{ kind: rate_multiplier, resources: { wealth: 1.15 } }]
+  gerald:
+    name: Gerald, a Very Large Elephant
+    desc: "Nobody owns Gerald. Gerald goes where Gerald pleases, and invaders tend to leave."
+    effects: [{ kind: enemy_attack_multiplier, value: 0.95 }]
+
+medieval:
+  sir_reginald:
+    name: Sir Reginald Hornswoggle
+    desc: "Undefeated at jousting, mostly because he jousts sideways and nobody knows the rules."
+    effects: [{ kind: attack_multiplier, value: 1.1, roles: [cavalry] }]
+  brother_mortimer:
+    name: Brother Mortimer the Mason
+    desc: "Took a vow of silence, then built walls so nobody could talk to him anyway."
+    effects: [{ kind: building_cost_multiplier, value: 0.9 }]
+  wandering_wenna:
+    name: Wandering Wenna
+    desc: "Has walked off the edge of every map of Chonga, and drawn a new one each time."
+    effects: [{ kind: exploration_reward_multiplier, value: 1.5 }]
+  nimble_pip:
+    name: Nimble Pip
+    desc: "Steals from the rich of the Whispering Woods, keeps it, and calls it redistribution."
+    effects: [{ kind: tribute_multiplier, value: 1.1 }]
+  maestro_fizzlewick:
+    name: Maestro Fizzlewick
+    desc: "Invented the flying machine. Invented the landing machine some time later."
+    effects: [{ kind: research_cost_multiplier, value: 0.8 }]
+
+enlightenment:
+  general_pompadour:
+    name: General Pompadour
+    desc: "His wig is taller than his cannons, and his cannons are extremely tall."
+    effects: [{ kind: attack_multiplier, value: 1.1, roles: [siege] }]
+  duchess_moneybags:
+    name: Duchess Goldie Moneybags
+    desc: "Owns the bank, the mint, and the man who counts the money at both."
+    effects: [{ kind: rate_multiplier, resources: { wealth: 1.1 } }]
+  admiral_hardtack:
+    name: Admiral Hardtack
+    desc: "Has never lost a ship on the Chonga Coast. Has misplaced several."
+    effects: [{ kind: enemy_attack_multiplier, value: 0.95 }]
+  philosopher_quill:
+    name: The Philosopher Quill
+    desc: "Writes forty pages a day, mostly on whether pages truly exist."
+    effects: [{ kind: rate_multiplier, resources: { knowledge: 1.1 } }]
+  captain_bellowmore:
+    name: Captain Bellowmore
+    desc: "Gives speeches so loud the enemy hears them too, and loses heart."
+    effects: [{ kind: attack_multiplier, value: 1.05 }]
+
+modern:
+  professor_thinkwell:
+    name: Professor Thinkwell
+    desc: "Holds three doctorates and has never once found his car keys."
+    effects: [{ kind: research_cost_multiplier, value: 0.75 }]
+  comrade_grumbles:
+    name: Comrade Grumbles
+    desc: "Believes everything belongs to everyone. Especially your things."
+    effects: [{ kind: tribute_multiplier, value: 1.2 }]
+  marshal_stiffupperlip:
+    name: Field Marshal Stiffupperlip
+    desc: "Has never surrendered, never flinched, and never smiled."
+    effects: [{ kind: enemy_attack_multiplier, value: 0.9 }]
+  dr_kaboom:
+    name: Dr. Kaboom
+    desc: "Asked what the big red button does. Found out. Wants to show you."
+    effects: [{ kind: unlock_unit, unit: icbm }]
+  penny_pincher:
+    name: Mr. Penny Pincher
+    desc: "The richest man in Chonga. Still reuses his tea bags."
+    effects: [{ kind: rate_multiplier, resources: { wealth: 1.25 } }]
+
+space:
+  zib:
+    name: Zib the Bounty Hunter
+    desc: "Will find anything in the Great Above for the right price, and some things for free."
+    effects: [{ kind: exploration_reward_multiplier, value: 1.5 }]
+  captain_nova_blaze:
+    name: Captain Nova Blaze
+    desc: "Her ship is held together with tape and confidence. Mostly confidence."
+    effects: [{ kind: attack_multiplier, value: 1.1, roles: [siege] }]
+  commander_orbit:
+    name: Commander Orbit
+    desc: "Defended Moonbase Mudhollow through four alien invasions and one very bad flu."
+    effects: [{ kind: enemy_attack_multiplier, value: 0.9 }]
+  unit_8b:
+    name: Unit 8-B, the Robot Accountant
+    desc: "Calculates your harvest to the eleventh decimal place, and rounds up."
+    effects: [{ kind: claim_multiplier, value: 1.1 }]

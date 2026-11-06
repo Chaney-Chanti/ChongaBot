@@ -1,0 +1,25 @@
+# Installed by deploy/setup.sh. Manually:
+#   sudo cp deploy/chongabot.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now chongabot
+# Logs: journalctl -u chongabot -f
+[Unit]
+Description=ChongaBot Discord bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=chonga
+WorkingDirectory=/home/chonga/ChongaBot
+Environment=LOG_JSON=true
+# The project's own virtualenv (made by `uv sync`), so nothing is installed at startup.
+ExecStart=/home/chonga/ChongaBot/.venv/bin/python -m chongabot
+Restart=always
+RestartSec=5
+# Basic hardening: the bot only needs its own folder.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

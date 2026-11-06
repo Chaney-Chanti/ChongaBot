@@ -1,0 +1,68 @@
+# Wonders of the Land of Chonga. Found through exploration, one of your age at a time,
+# and never lost. The bonus text shown in-game is generated from `effects`.
+
+ancient:
+  the_great_chonga_mound:
+    name: The Great Chonga Mound
+    desc: "Nobody knows who piled it up. Everyone agrees it is extremely big."
+    effects: [{ kind: building_cost_multiplier, value: 0.85 }]
+  the_colossal_chonga:
+    name: The Colossal Chonga
+    desc: "A bronze statue of Chonga the First, mid-flex. Invaders find it intimidating."
+    effects: [{ kind: enemy_attack_multiplier, value: 0.9 }]
+  the_dangling_gardens:
+    name: The Dangling Gardens
+    desc: "Like regular gardens, but higher up. Nobody can reach the top tomatoes."
+    effects: [{ kind: rate_multiplier, resources: { food: 1.25 } }]
+  the_great_wall_of_chonga:
+    name: The Great Wall of Chonga
+    desc: "Built to keep out the people on the other side of it. They built one too."
+    effects: [{ kind: attack_multiplier, value: 1.25, roles: [defense] }]
+
+medieval:
+  terra_chonga_army:
+    name: The Terra Chonga Army
+    desc: "Eight thousand clay soldiers, and every single one of them is Chonga."
+    effects: [{ kind: unit_cost_multiplier, value: 0.85 }]
+  the_chongasseum:
+    name: The Chongasseum
+    desc: "Bread, circuses, and an awful lot of yelling. Soldiers leave it fired up."
+    effects: [{ kind: attack_multiplier, value: 1.1, roles: [melee, ranged, cavalry, siege] }]
+  the_heart_of_the_woods:
+    name: The Heart of the Woods
+    desc: "The oldest tree in the Whispering Woods. It knows everyone's secrets and sells timber."
+    effects: [{ kind: rate_multiplier, resources: { timber: 1.25 } }]
+
+enlightenment:
+  the_palace_of_chonga:
+    name: The Palace of Chonga
+    desc: "Seven hundred rooms, and a portrait of Chonga the First in every one."
+    effects: [{ kind: rate_multiplier, resources: { knowledge: 1.25 } }]
+  the_chongalayas:
+    name: The Peak of the Chongalayas
+    desc: "The highest mountain in the land. It's mostly ore, held together with goats."
+    effects: [{ kind: rate_multiplier, resources: { metal: 1.25 } }]
+
+modern:
+  the_rivers_of_chonga:
+    name: The Rivers of Chonga
+    desc: "Big Chonga, Little Chonga, and the one nobody names. They flow with gold. Don't drink it."
+    effects: [{ kind: rate_multiplier, resources: { wealth: 1.25 } }]
+  the_chonga_hadron_collider:
+    name: The Chonga Hadron Collider
+    desc: "Nobody knows what it does, so nobody dares fire anything near it."
+    effects: [{ kind: enemy_attack_multiplier, value: 0.8, roles: [siege] }]
+  the_oil_fields_of_chonga:
+    name: The Oil Fields of Chonga
+    desc: "Chonga the First's last sneeze, still bubbling up after all these years."
+    effects: [{ kind: rate_multiplier, resources: { oil: 1.25 } }]
+
+space:
+  the_chongularity:
+    name: The Chongularity
+    desc: "A point in space where everything is slightly more Chonga than it should be."
+    effects: [{ kind: claim_multiplier, value: 1.15 }]
+  the_dyson_chonga:
+    name: The Dyson Chonga
+    desc: "A shell around the sun, with Chonga the First's face on it. Visible from everywhere."
+    effects: [{ kind: rate_multiplier, resources: { all: 1.1 } }]

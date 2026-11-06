@@ -1,4 +1,0 @@
-nextcord==2.0.0a9
-python-dotenv==0.19.2
-PurgoMalum==1.0.3
-pymongo==4.0.2

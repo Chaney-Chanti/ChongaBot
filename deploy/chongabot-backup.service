@@ -1,0 +1,8 @@
+[Unit]
+Description=Back up the ChongaBot database
+
+[Service]
+Type=oneshot
+User=chonga
+WorkingDirectory=/home/chonga/ChongaBot
+ExecStart=/home/chonga/ChongaBot/deploy/backup.sh

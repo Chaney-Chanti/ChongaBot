@@ -1,0 +1,54 @@
+# Alliance bosses of the Land of Chonga. Too strong for any one nation: an alliance fights
+# them with its shared army, and the loot is split by how much of that army each member
+# contributed. Armies are generated from the age's units; `strength` is the army's value
+# as a multiple of the age's scale (the cost of advancing out of it). See boss_* settings.
+
+ancient:
+  the_mud_golem:
+    name: The Mud Golem
+    desc: "Mudhollow's first citizen, made of Mudhollow. It wants its village back."
+    strength: 6
+  grandmother_mammoth:
+    name: Grandmother Mammoth
+    desc: "The oldest beast in Mammothvale. Every tribe that tried to hunt her is now a story she tells."
+    strength: 15
+
+medieval:
+  the_turnip_dragon:
+    name: The Turnip Dragon
+    desc: "It ate every turnip in Turnipshire and became one. Breathes fire, smells like soup."
+    strength: 6
+  the_black_knight_of_highcrag:
+    name: The Black Knight of Highcrag
+    desc: "Has never lost a duel, mostly because he refuses to admit when he has."
+    strength: 15
+
+enlightenment:
+  the_clockwork_colossus:
+    name: The Clockwork Colossus
+    desc: "Built by the Clockwork Court to settle arguments. It settles them by stepping on them."
+    strength: 6
+  admiral_snuff:
+    name: Admiral Snuff and the Powdered Armada
+    desc: "Fifty ships, one admiral, and enough wig powder to blot out the sun."
+    strength: 15
+
+modern:
+  the_smog_leviathan:
+    name: The Smog Leviathan
+    desc: "Every factory chimney in the Smog Union, rolled into one cloud with opinions."
+    strength: 6
+  mecha_chonga:
+    name: Mecha-Chonga
+    desc: "A forty-storey robot in the likeness of Chonga the First. The beard is load-bearing."
+    strength: 15
+
+space:
+  the_moon_that_bites:
+    name: The Moon That Bites
+    desc: "Moonbase Mudhollow dug too deep. Now the moon has teeth, and it's hungry."
+    strength: 9
+  the_ghost_of_chonga_the_first:
+    name: The Ghost of Chonga the First
+    desc: "He came back. He's been watching. He has notes on how you've all been running his land."
+    strength: 22

@@ -1,0 +1,19 @@
+# Production buildings can be built from their age onward. Each one adds
+# yield_per_hour to its resource, before the age multiplier and research.
+# Every copy you own makes the next one cost more (settings.building_cost_growth).
+production:
+  granary:    { name: Granary,     age: ancient,       produces: food,      yield_per_hour: 25, cost: { timber: 150, metal: 50 } }
+  lumbermill: { name: Lumber Mill, age: ancient,       produces: timber,    yield_per_hour: 25, cost: { food: 100, metal: 50 } }
+  quarry:     { name: Quarry,      age: ancient,       produces: metal,     yield_per_hour: 20, cost: { food: 100, timber: 100 } }
+  market:     { name: Market,      age: ancient,       produces: wealth,    yield_per_hour: 15, cost: { timber: 150, metal: 100 } }
+  university: { name: University,  age: ancient,       produces: knowledge, yield_per_hour: 10, cost: { timber: 200, wealth: 150 } }
+  oil_rig:    { name: Oil Rig,     age: enlightenment, produces: oil,       yield_per_hour: 20, cost: { metal: 600, wealth: 400 } }
+
+# Defense buildings can only be built in their own age (older ones keep fighting).
+# They defend in every battle and come back at full count afterwards.
+defense:
+  keep:               { name: Keep,               age: ancient,       attack: 54,   hp: 271,   cost: { timber: 400, metal: 300 } }
+  castle:             { name: Castle,             age: medieval,      attack: 218,  hp: 1091,  cost: { timber: 1000, metal: 1000, wealth: 300 } }
+  fortress:           { name: Fortress,           age: enlightenment, attack: 755,  hp: 3776,  cost: { timber: 2500, metal: 3000, wealth: 1000 } }
+  bunker:             { name: Bunker,             age: modern,        attack: 1838, hp: 9192,  cost: { metal: 8000, wealth: 3000, oil: 2000 } }
+  planetary_fortress: { name: Planetary Fortress, age: space,         attack: 6582, hp: 32909, cost: { metal: 20000, wealth: 10000, oil: 8000 } }

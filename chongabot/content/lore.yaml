@@ -1,0 +1,40 @@
+# The world of ChongaBot. Shown by /lore, and referenced by wonders, heroes and bot nations.
+
+title: The Land of Chonga
+
+intro: >-
+  Long ago, the Land of Chonga was one very large, very flat field. Then Chonga the First,
+  a giant of enormous appetite, ate something that disagreed with him and sneezed so hard
+  the field cracked apart into mountains, forests, rivers and coast. Everyone who'd been
+  standing on it had to pick a piece. They have been fighting over who got the best one
+  ever since.
+
+  Chonga the First was never seen again, but he left behind his name, his wonders, and a
+  great many people who claim to be his favourite. You are the newest of them. Found a
+  nation, raise an army, and prove it.
+
+regions:
+  - name: The Mudlands
+    desc: >-
+      The low, wet east, where the first villages were built out of the only thing
+      available. Mudhollow is the oldest settlement in Chonga, and smells like it.
+  - name: The Chongalayas
+    desc: >-
+      Mountains in the north, so tall the goats up there have never seen the ground. Full
+      of ore, caves, and hermits who left to get away from everyone and now give advice.
+  - name: The Whispering Woods
+    desc: >-
+      The great western forest. The trees gossip. Explorers who go in come back knowing
+      things about their neighbours they wish they didn't.
+  - name: The Rivers of Chonga
+    desc: >-
+      Three rivers run through the middle of the land: Big Chonga, Little Chonga, and the
+      one nobody names. Whoever controls the fords controls the trade, and everyone tries.
+  - name: The Chonga Coast
+    desc: >-
+      The sunny south shore, all ports and pirates. The pirates insist they're "independent
+      merchants". The merchants insist the same about the pirates.
+  - name: The Great Above
+    desc: >-
+      The sky. For thousands of years it was where Chonga the First was said to have gone.
+      In the Age of Stars, nations finally go up to check.
